@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileField, FileRequired
-from wtforms import StringField
+from wtforms import StringField, TextAreaField
 from wtforms.validators import DataRequired, Email, Length, Optional
 
 
@@ -15,4 +15,12 @@ class ImportForm(FlaskForm):
     csv_file = FileField(
         "Fichier CSV",
         validators=[FileRequired(), FileAllowed(["csv"], "Fichier CSV uniquement.")],
+    )
+
+
+class EmailTemplateForm(FlaskForm):
+    subject = StringField("Objet de l'e-mail", validators=[DataRequired(), Length(max=255)])
+    body = TextAreaField("Message", validators=[DataRequired(), Length(max=5000)])
+    test_email = StringField(
+        "Adresse de test", validators=[Optional(), Email(), Length(max=255)]
     )

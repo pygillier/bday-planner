@@ -14,10 +14,16 @@ from flask import (
 
 from app.admin import admin_bp
 from app.admin.csv_import import import_guests_from_csv
-from app.admin.forms import GuestForm, ImportForm
-from app.emails import send_invitation_email
+from app.admin.forms import EmailTemplateForm, GuestForm, ImportForm
+from app.emails import (
+    preview_context,
+    render_invitation_body,
+    render_invitation_subject,
+    send_invitation_email,
+    send_test_email,
+)
 from app.extensions import db, oauth
-from app.models import Guest
+from app.models import EMAIL_VARIABLES, EmailTemplate, Guest
 
 PUBLIC_ENDPOINTS = {"admin.login", "admin.login_pocketid", "admin.auth_callback"}
 
@@ -167,6 +173,40 @@ def regenerate_link(guest_id):
     db.session.commit()
     flash("Lien régénéré — pensez à le retransmettre.", "success")
     return redirect(url_for("admin.guests_list"))
+
+
+@admin_bp.route("/email-template", methods=["GET", "POST"])
+def email_template():
+    template = EmailTemplate.get_current()
+    form = EmailTemplateForm(obj=template)
+    action = request.form.get("action")
+
+    if form.validate_on_submit():
+        if action == "test":
+            if not form.test_email.data:
+                flash("Indiquez une adresse e-mail pour l'envoi de test.", "error")
+            elif send_test_email(form.test_email.data, form.subject.data, form.body.data):
+                flash(f"E-mail de test envoyé à {form.test_email.data}.", "success")
+            else:
+                flash("Échec de l'envoi de l'e-mail de test.", "error")
+        else:
+            template.subject = form.subject.data
+            template.body = form.body.data
+            db.session.commit()
+            flash("Modèle d'e-mail mis à jour.", "success")
+            return redirect(url_for("admin.email_template"))
+
+    context = preview_context()
+    preview_subject = render_invitation_subject(form.subject.data or template.subject, context)
+    preview_body = render_invitation_body(form.body.data or template.body, context)
+
+    return render_template(
+        "admin/email_template.html",
+        form=form,
+        variables=EMAIL_VARIABLES,
+        preview_subject=preview_subject,
+        preview_body=preview_body,
+    )
 
 
 @admin_bp.route("/export.csv")

@@ -22,9 +22,9 @@ app/
   __init__.py        app factory: create_app()
   config.py           Config (env-driven) + TestConfig (sqlite, CSRF off)
   extensions.py         db, migrate, csrf, oauth singletons
-  models.py              Guest, PlusOne, InvitationLog
-  emails.py                Resend integration
-  admin/                    OIDC-protected blueprint: guest CRUD, CSV import/export, dashboard
+  models.py              Guest, PlusOne, InvitationLog, EmailTemplate
+  emails.py                Resend integration + safe (non-Jinja) template substitution
+  admin/                    OIDC-protected blueprint: guest CRUD, CSV import/export, email template, dashboard
     csv_import.py             pure parsing/dedup logic for bulk guest import, unit-testable
   guest/                     unauthenticated blueprint: token-based RSVP flow
   templates/, static/         guest side is mobile-first with the "80 ANS" design identity;
@@ -41,6 +41,7 @@ tests/                      pytest, run against an in-memory sqlite DB via TestC
 - **Admin auth**: any successfully authenticated Pocket ID login is granted admin access — there is intentionally no allow-list/authorization table. `session["admin_sub"]` is the only gate (`app/admin/auth.py` + the blueprint's `before_request` in `app/admin/routes.py`).
 - **Invitations**: sent only when the organizer explicitly clicks send (single or bulk) — never automatically on guest creation.
 - **No token expiry**: links are valid indefinitely; `regenerate-link` is the manual mitigation if one leaks.
+- **Invitation email template**: editable by the admin at `/admin/email-template` (subject + body, singleton `EmailTemplate` row). Placeholders (`{prenom}`, `{nom}`, `{lien}`) are substituted with plain string `.replace()` + `markupsafe.escape()` in `app/emails.py` — **never** via Jinja `render_template_string`/`from_string()`. Since any successful Pocket ID login reaches this form (no allow-list), rendering admin-edited text through a real template engine would be server-side template injection → RCE. Keep it that way even if asked to make it "more powerful".
 
 ## Dev workflow
 

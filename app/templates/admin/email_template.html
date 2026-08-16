@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% from "admin/_shell.html" import sidebar %}
+{% block title %}Modèle d'e-mail — 80 ans{% endblock %}
+{% block body_class %}admin{% endblock %}
+{% block content %}
+<div class="admin-shell">
+  {{ sidebar("email_template") }}
+  <main class="admin-main">
+    <div class="admin-header">
+      <h1>Modèle d'e-mail d'invitation</h1>
+    </div>
+
+    <p>Variables disponibles — elles seront remplacées automatiquement à l'envoi :</p>
+    <table class="admin-table" style="max-width:40rem; margin-bottom:1.5rem;">
+      <thead>
+        <tr><th>Variable</th><th>Signification</th></tr>
+      </thead>
+      <tbody>
+        {% for name, description in variables.items() %}
+        <tr><td><code>{{ '{' }}{{ name }}{{ '}' }}</code></td><td>{{ description }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <form method="post" style="max-width:34rem;">
+      {{ form.csrf_token }}
+      <div class="field">
+        {{ form.subject.label }}
+        {{ form.subject() }}
+      </div>
+      <div class="field">
+        {{ form.body.label }}
+        {{ form.body(rows=8) }}
+      </div>
+      <button type="submit" name="action" value="save" class="btn-sm btn-sm--primary">Enregistrer</button>
+
+      <h2 style="margin-top:2.5rem;">Aperçu</h2>
+      <p style="color:var(--stone-dark); font-size:0.9rem;">Avec des exemples de valeurs ({{ '{prenom}' }} → Jeanne, {{ '{nom}' }} → Dupont).</p>
+      <div style="border:1px solid var(--stone); border-radius:0.75rem; padding:1.5rem; background:var(--white);">
+        <p style="margin:0 0 1rem; font-weight:600;">Objet : {{ preview_subject }}</p>
+        <div>{{ preview_body }}</div>
+      </div>
+
+      <h2 style="margin-top:2.5rem;">Tester l'envoi</h2>
+      <p style="color:var(--stone-dark); font-size:0.9rem;">
+        Envoie un e-mail réel avec le contenu ci-dessus (même non enregistré) à une adresse de votre choix, avec des exemples de valeurs.
+      </p>
+      <div style="display:flex; gap:0.5rem; align-items:flex-start;">
+        <div class="field" style="flex:1; margin-bottom:0;">
+          {{ form.test_email(placeholder="vous@example.com") }}
+        </div>
+        <button type="submit" name="action" value="test" class="btn-sm">Envoyer un test</button>
+      </div>
+    </form>
+  </main>
+</div>
+{% endblock %}
