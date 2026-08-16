@@ -9,7 +9,7 @@ Built for a non-technical, largely elderly guest list: the guest-facing flow is 
 ## Features
 
 - **Guest RSVP**: confirm/decline, free-text dietary notes, add accompanying guests (no name needed, just their own dietary notes)
-- **Admin backend**: add/edit/remove guests, send invitations (single or bulk) via [Resend](https://resend.com), dashboard with headcount stats, CSV export
+- **Admin backend**: add/edit/remove guests (one by one or bulk CSV import), send invitations (single or bulk) via [Resend](https://resend.com), dashboard with headcount stats, CSV export
 - **Admin login** via OIDC against a self-hosted [Pocket ID](https://github.com/pocket-id/pocket-id) instance (Authlib, authorization-code flow + PKCE) — no local passwords
 - French-only UI
 

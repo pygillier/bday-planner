@@ -27,3 +27,11 @@ def guest(app):
     _db.session.add(g)
     _db.session.commit()
     return g
+
+
+@pytest.fixture
+def admin_client(client):
+    with client.session_transaction() as session:
+        session["admin_sub"] = "test-sub"
+        session["admin_email"] = "admin@example.com"
+    return client

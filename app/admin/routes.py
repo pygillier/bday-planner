@@ -13,7 +13,8 @@ from flask import (
 )
 
 from app.admin import admin_bp
-from app.admin.forms import GuestForm
+from app.admin.csv_import import import_guests_from_csv
+from app.admin.forms import GuestForm, ImportForm
 from app.emails import send_invitation_email
 from app.extensions import db, oauth
 from app.models import Guest
@@ -91,6 +92,27 @@ def new_guest():
         flash("Invité·e ajouté·e.", "success")
         return redirect(url_for("admin.guests_list"))
     return render_template("admin/guest_form.html", form=form, guest=None)
+
+
+@admin_bp.route("/guests/import", methods=["GET", "POST"])
+def import_guests():
+    form = ImportForm()
+    if form.validate_on_submit():
+        result = import_guests_from_csv(form.csv_file.data.stream.read())
+
+        if result.added:
+            flash(f"{result.added} invité·e(s) importé·e(s).", "success")
+        if result.skipped_duplicate:
+            flash(
+                f"{result.skipped_duplicate} ligne(s) ignorée(s) (déjà présent·e·s).", "success"
+            )
+        for error in result.errors[:10]:
+            flash(error, "error")
+
+        if result.added or result.skipped_duplicate:
+            return redirect(url_for("admin.guests_list"))
+
+    return render_template("admin/import_guests.html", form=form)
 
 
 @admin_bp.route("/guests/<int:guest_id>/edit", methods=["GET", "POST"])

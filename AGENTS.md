@@ -24,7 +24,8 @@ app/
   extensions.py         db, migrate, csrf, oauth singletons
   models.py              Guest, PlusOne, InvitationLog
   emails.py                Resend integration
-  admin/                    OIDC-protected blueprint: guest CRUD, dashboard, CSV export
+  admin/                    OIDC-protected blueprint: guest CRUD, CSV import/export, dashboard
+    csv_import.py             pure parsing/dedup logic for bulk guest import, unit-testable
   guest/                     unauthenticated blueprint: token-based RSVP flow
   templates/, static/         guest side is mobile-first with the "80 ANS" design identity;
                                admin side is desktop-first, plain

@@ -10,6 +10,7 @@
       <h1>Invité·e·s</h1>
       <div class="actions-row">
         <a class="btn-sm btn-sm--primary" href="{{ url_for('admin.new_guest') }}">+ Ajouter</a>
+        <a class="btn-sm" href="{{ url_for('admin.import_guests') }}">Importer (CSV)</a>
         <form method="post" action="{{ url_for('admin.send_invitations') }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button type="submit" class="btn-sm">Envoyer les invitations en attente</button>

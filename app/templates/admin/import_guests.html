@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% from "admin/_shell.html" import sidebar %}
+{% block title %}Importer des invité·e·s — 80 ans{% endblock %}
+{% block body_class %}admin{% endblock %}
+{% block content %}
+<div class="admin-shell">
+  {{ sidebar("guests") }}
+  <main class="admin-main">
+    <div class="admin-header">
+      <h1>Importer des invité·e·s</h1>
+    </div>
+
+    <p>Le fichier doit être au format CSV, avec une première ligne d'en-têtes. Colonnes reconnues :</p>
+    <table class="admin-table" style="max-width:40rem; margin-bottom:1.5rem;">
+      <thead>
+        <tr><th>Colonne</th><th>Obligatoire</th><th>Exemple</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Prénom</td><td>Oui</td><td>Jeanne</td></tr>
+        <tr><td>Nom</td><td>Oui</td><td>Dupont</td></tr>
+        <tr><td>E-mail</td><td>Non</td><td>jeanne@example.com</td></tr>
+        <tr><td>Téléphone</td><td>Non</td><td>06 12 34 56 78</td></tr>
+      </tbody>
+    </table>
+    <p style="color:var(--stone-dark); font-size:0.9rem;">
+      Les invité·e·s déjà présent·e·s (même prénom et nom) sont ignoré·e·s automatiquement, vous pouvez donc réimporter le même fichier sans créer de doublons.
+    </p>
+
+    <form method="post" enctype="multipart/form-data" style="max-width:28rem; margin-top:1.5rem;">
+      {{ form.csv_file.label }}
+      {{ form.csrf_token }}
+      {{ form.csv_file() }}
+      {% for error in form.csv_file.errors %}
+        <p class="flash flash--error" style="text-align:left; padding:0.5rem 0;">{{ error }}</p>
+      {% endfor %}
+      <div style="margin-top:1rem;">
+        <button type="submit" class="btn-sm btn-sm--primary">Importer</button>
+        <a class="btn-sm" href="{{ url_for('admin.guests_list') }}">Annuler</a>
+      </div>
+    </form>
+  </main>
+</div>
+{% endblock %}
