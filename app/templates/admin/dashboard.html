@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from "admin/_shell.html" import sidebar %}
+{% block title %}Tableau de bord — 80 ans{% endblock %}
+{% block body_class %}admin{% endblock %}
+{% block content %}
+<div class="admin-shell">
+  {{ sidebar("dashboard") }}
+  <main class="admin-main">
+    <div class="admin-header">
+      <h1>Tableau de bord</h1>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-tile">
+        <div class="stat-tile__value">{{ counts.confirmed }}</div>
+        <div class="stat-tile__label">Confirmé·e·s</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-tile__value">{{ counts.declined }}</div>
+        <div class="stat-tile__label">Décliné·e·s</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-tile__value">{{ counts.pending }}</div>
+        <div class="stat-tile__label">En attente</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-tile__value">{{ total_headcount }}</div>
+        <div class="stat-tile__label">Total présent·e·s (avec accompagnants)</div>
+      </div>
+    </div>
+
+    <a class="btn-sm btn-sm--primary" href="{{ url_for('admin.guests_list') }}">Voir la liste des invité·e·s</a>
+  </main>
+</div>
+{% endblock %}

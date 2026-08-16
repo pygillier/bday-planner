@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}80 ans — {{ guest.first_name }}{% endblock %}
+{% block body_class %}guest{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="medallion">
+    <span class="medallion-number">80</span>
+    <span class="medallion-label">ANS</span>
+  </div>
+
+  {% if guest.rsvp_status == "confirmed" %}
+    <span class="status-pill status-pill--confirmed">Vous avez confirmé votre présence</span>
+    <h1 class="headline">Bonjour {{ guest.first_name }}, à bientôt !</h1>
+    <a class="btn btn-primary" href="{{ url_for('guest.details', token=guest.token) }}">Modifier mes informations</a>
+    <form method="post" action="{{ url_for('guest.decline', token=guest.token) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn-ghost">Je ne peux finalement plus venir</button>
+    </form>
+  {% elif guest.rsvp_status == "declined" %}
+    <span class="status-pill status-pill--declined">Vous avez indiqué ne pas pouvoir venir</span>
+    <h1 class="headline">Bonjour {{ guest.first_name }}, vous nous manquerez !</h1>
+    <form method="post" action="{{ url_for('guest.confirm', token=guest.token) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-primary">Finalement, je viens !</button>
+    </form>
+  {% else %}
+    <h1 class="headline">Bonjour {{ guest.first_name }}, serez-vous des nôtres ?</h1>
+    <form method="post" action="{{ url_for('guest.confirm', token=guest.token) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-primary">Oui, je viens !</button>
+    </form>
+    <form method="post" action="{{ url_for('guest.decline', token=guest.token) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-secondary">Je ne peux pas venir</button>
+    </form>
+  {% endif %}
+</div>
+{% endblock %}

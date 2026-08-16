@@ -1,0 +1,86 @@
+from flask import abort, redirect, render_template, request, url_for
+
+from app.extensions import db
+from app.guest import guest_bp
+from app.guest.forms import DetailsForm
+from app.models import Guest, PlusOne, utcnow
+
+
+def _get_guest_or_404(token):
+    guest = Guest.query.filter_by(token=token).first()
+    if guest is None:
+        abort(404)
+    return guest
+
+
+@guest_bp.errorhandler(404)
+def invalid_token(_error):
+    return render_template("guest/invalid_token.html"), 404
+
+
+@guest_bp.route("/<token>")
+def landing(token):
+    guest = _get_guest_or_404(token)
+    return render_template("guest/landing.html", guest=guest)
+
+
+@guest_bp.route("/<token>/confirmer", methods=["POST"])
+def confirm(token):
+    guest = _get_guest_or_404(token)
+    guest.rsvp_status = "confirmed"
+    guest.rsvp_updated_at = utcnow()
+    db.session.commit()
+    return redirect(url_for("guest.details", token=token))
+
+
+@guest_bp.route("/<token>/decliner", methods=["POST"])
+def decline(token):
+    guest = _get_guest_or_404(token)
+    guest.rsvp_status = "declined"
+    guest.rsvp_updated_at = utcnow()
+    db.session.commit()
+    return redirect(url_for("guest.thank_you", token=token))
+
+
+@guest_bp.route("/<token>/details", methods=["GET", "POST"])
+def details(token):
+    guest = _get_guest_or_404(token)
+    if guest.rsvp_status != "confirmed":
+        return redirect(url_for("guest.landing", token=token))
+
+    form = DetailsForm(obj=guest)
+    if form.validate_on_submit():
+        guest.dietary_notes = form.dietary_notes.data
+        for plus_one, notes in zip(
+            guest.plus_ones, request.form.getlist("plus_one_notes")
+        ):
+            plus_one.dietary_notes = notes
+        guest.rsvp_updated_at = utcnow()
+        db.session.commit()
+        return redirect(url_for("guest.thank_you", token=token))
+
+    return render_template("guest/details.html", guest=guest, form=form)
+
+
+@guest_bp.route("/<token>/details/plus-one/add", methods=["POST"])
+def add_plus_one(token):
+    guest = _get_guest_or_404(token)
+    db.session.add(PlusOne(guest_id=guest.id))
+    db.session.commit()
+    return redirect(url_for("guest.details", token=token))
+
+
+@guest_bp.route("/<token>/details/plus-one/<int:plus_one_id>/remove", methods=["POST"])
+def remove_plus_one(token, plus_one_id):
+    guest = _get_guest_or_404(token)
+    plus_one = PlusOne.query.filter_by(id=plus_one_id, guest_id=guest.id).first()
+    if plus_one is not None:
+        db.session.delete(plus_one)
+        db.session.commit()
+    return redirect(url_for("guest.details", token=token))
+
+
+@guest_bp.route("/<token>/merci")
+def thank_you(token):
+    guest = _get_guest_or_404(token)
+    return render_template("guest/thank_you.html", guest=guest)

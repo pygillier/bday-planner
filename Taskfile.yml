@@ -1,0 +1,42 @@
+version: '3'
+
+tasks:
+  up:
+    desc: Build and start the app + database
+    cmds: [docker compose up --build]
+
+  down:
+    desc: Stop and remove containers
+    cmds: [docker compose down]
+
+  logs:
+    desc: Tail the web app logs
+    cmds: [docker compose logs -f web]
+
+  migrate:
+    desc: Apply pending DB migrations
+    cmds: [docker compose exec web flask db upgrade]
+
+  makemigration:
+    desc: 'Generate a migration from model changes -- usage: task makemigration -- "message"'
+    cmds: [docker compose exec web flask db migrate -m "{{.CLI_ARGS}}"]
+
+  shell:
+    desc: Open a Flask shell inside the running web container
+    cmds: [docker compose exec web flask shell]
+
+  dbshell:
+    desc: Open a psql shell against the app database
+    cmds: [docker compose exec db psql -U ${POSTGRES_USER} -d ${POSTGRES_DB}]
+
+  test:
+    desc: Run the test suite
+    cmds: [docker compose exec web pytest]
+
+  lint:
+    desc: Lint the codebase
+    cmds: [docker compose exec web ruff check .]
+
+  fmt:
+    desc: Auto-format the codebase
+    cmds: [docker compose exec web ruff format .]

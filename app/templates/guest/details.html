@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}80 ans — vos informations{% endblock %}
+{% block body_class %}guest{% endblock %}
+{% block content %}
+<div class="card">
+  <h1 class="headline">Vos informations, {{ guest.first_name }}</h1>
+
+  <form method="post" action="{{ url_for('guest.details', token=guest.token) }}">
+    {{ form.csrf_token }}
+    <div class="field">
+      {{ form.dietary_notes.label }}
+      {{ form.dietary_notes(placeholder="Allergies, régime particulier, autre chose à savoir...") }}
+    </div>
+
+    {% if guest.plus_ones %}
+      {% for plus_one in guest.plus_ones %}
+        <div class="plus-one">
+          <div class="plus-one__header">
+            <span>Accompagnant {{ loop.index }}</span>
+          </div>
+          <div class="field">
+            <label>Allergies / informations</label>
+            <textarea name="plus_one_notes" placeholder="Allergies, régime particulier...">{{ plus_one.dietary_notes or "" }}</textarea>
+          </div>
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <button type="submit" class="btn btn-primary">Enregistrer</button>
+  </form>
+
+  {% for plus_one in guest.plus_ones %}
+    <form method="post" action="{{ url_for('guest.remove_plus_one', token=guest.token, plus_one_id=plus_one.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn-ghost">Retirer l'accompagnant {{ loop.index }}</button>
+    </form>
+  {% endfor %}
+
+  <form method="post" action="{{ url_for('guest.add_plus_one', token=guest.token) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="add-plus-one">+ Ajouter un accompagnant</button>
+  </form>
+
+  <a class="btn-ghost" href="{{ url_for('guest.landing', token=guest.token) }}">← Retour</a>
+</div>
+{% endblock %}

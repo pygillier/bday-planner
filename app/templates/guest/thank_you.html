@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}80 ans — merci{% endblock %}
+{% block body_class %}guest{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="medallion">
+    <span class="medallion-number">80</span>
+    <span class="medallion-label">ANS</span>
+  </div>
+
+  {% if guest.rsvp_status == "confirmed" %}
+    <span class="status-pill status-pill--confirmed">Présence confirmée</span>
+    <h1 class="headline">Merci {{ guest.first_name }} ! Votre réponse a bien été enregistrée.</h1>
+  {% else %}
+    <span class="status-pill status-pill--declined">Absence notée</span>
+    <h1 class="headline">Merci {{ guest.first_name }}, votre réponse a bien été enregistrée.</h1>
+  {% endif %}
+
+  <p class="thank-you__note">
+    Vous pouvez revenir sur cette page à tout moment avec le même lien pour modifier votre réponse.
+  </p>
+
+  <a class="btn btn-secondary" href="{{ url_for('guest.landing', token=guest.token) }}">Revoir ma réponse</a>
+</div>
+{% endblock %}

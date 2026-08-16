@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% from "admin/_shell.html" import sidebar %}
+{% block title %}Invité·e·s — 80 ans{% endblock %}
+{% block body_class %}admin{% endblock %}
+{% block content %}
+<div class="admin-shell">
+  {{ sidebar("guests") }}
+  <main class="admin-main">
+    <div class="admin-header">
+      <h1>Invité·e·s</h1>
+      <div class="actions-row">
+        <a class="btn-sm btn-sm--primary" href="{{ url_for('admin.new_guest') }}">+ Ajouter</a>
+        <form method="post" action="{{ url_for('admin.send_invitations') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn-sm">Envoyer les invitations en attente</button>
+        </form>
+      </div>
+    </div>
+
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Nom</th>
+          <th>Statut</th>
+          <th>Accompagnants</th>
+          <th>Invitation envoyée</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for guest in guests %}
+        <tr>
+          <td>{{ guest.full_name }}</td>
+          <td><span class="badge badge--{{ guest.rsvp_status }}">{{ guest.rsvp_status }}</span></td>
+          <td>{{ guest.plus_ones|length }}</td>
+          <td>{{ "Oui" if guest.invitation_sent_at else "Non" }}</td>
+          <td>
+            <div class="actions-row">
+              <a class="btn-sm" href="{{ url_for('admin.edit_guest', guest_id=guest.id) }}">Modifier</a>
+              {% if guest.email %}
+              <form method="post" action="{{ url_for('admin.send_invitation', guest_id=guest.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn-sm">Envoyer</button>
+              </form>
+              {% else %}
+              <span class="btn-sm" title="{{ url_for('guest.landing', token=guest.token, _external=True) }}">Pas d'e-mail — lien : {{ guest.token[:8] }}…</span>
+              {% endif %}
+              <form method="post" action="{{ url_for('admin.regenerate_link', guest_id=guest.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn-sm">Régénérer le lien</button>
+              </form>
+              <form method="post" action="{{ url_for('admin.delete_guest', guest_id=guest.id) }}" onsubmit="return confirm('Supprimer {{ guest.full_name }} ?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn-sm">Supprimer</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5">Aucun·e invité·e pour le moment.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </main>
+</div>
+{% endblock %}
