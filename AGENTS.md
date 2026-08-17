@@ -13,6 +13,7 @@ A small Flask + PostgreSQL app for managing RSVPs to an 80th birthday party. The
 - Authlib for OIDC (admin auth against a self-hosted **Pocket ID** instance, authorization-code flow + PKCE)
 - Resend for transactional email (invitations)
 - Docker Compose for local dev and deployment; `Taskfile.yml` (go-task) as the single command entrypoint
+- uv for Python dependency management (`pyproject.toml` + `uv.lock`)
 - ruff for lint/format, pytest for tests
 
 ## Project structure
@@ -68,7 +69,7 @@ Editing `app/models.py` alone does not update the database. Run `task makemigrat
 
 ### Testing without Docker
 
-`tests/conftest.py` builds the app with `TestConfig` (in-memory SQLite, CSRF disabled), so `pytest` can run directly against a local Python 3.14 + `pip install -r requirements-dev.txt` environment if you don't want to go through Docker for a quick check. `task test` is the canonical way, though.
+`tests/conftest.py` builds the app with `TestConfig` (in-memory SQLite, CSRF disabled), so `pytest` can run directly against a local Python 3.14 + `uv sync --group dev` environment if you don't want to go through Docker for a quick check. `task test` is the canonical way, though.
 
 ## Conventions
 

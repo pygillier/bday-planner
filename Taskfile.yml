@@ -39,7 +39,7 @@ tasks:
   test:
     desc: Run the test suite
     cmds:
-      - docker compose exec web pytest
+      - docker compose exec web python -m pytest
 
   lint:
     desc: Lint the codebase
