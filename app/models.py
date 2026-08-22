@@ -24,6 +24,8 @@ class Guest(db.Model):
     rsvp_status = db.Column(db.String(20), nullable=False, default="pending")
     rsvp_updated_at = db.Column(db.DateTime, nullable=True)
 
+    event_option_id = db.Column(db.Integer, db.ForeignKey("event_options.id"), nullable=True)
+
     dietary_notes = db.Column(db.Text, nullable=True)
 
     invitation_sent_at = db.Column(db.DateTime, nullable=True)
@@ -40,6 +42,7 @@ class Guest(db.Model):
     invitation_logs = db.relationship(
         "InvitationLog", backref="guest", cascade="all, delete-orphan", order_by="InvitationLog.sent_at.desc()"
     )
+    event_option = db.relationship("EventOption", backref="guests")
 
     @property
     def full_name(self):
@@ -75,6 +78,37 @@ class InvitationLog(db.Model):
     resend_message_id = db.Column(db.String(120), nullable=True)
     status = db.Column(db.String(20), nullable=False, default="sent")
     error_message = db.Column(db.Text, nullable=True)
+
+
+FR_WEEKDAYS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
+FR_MONTHS = [
+    "janvier", "février", "mars", "avril", "mai", "juin",
+    "juillet", "août", "septembre", "octobre", "novembre", "décembre",
+]
+
+
+def format_date_fr(dt):
+    """French date/time formatting without relying on server locale."""
+    time_part = dt.strftime("%Hh%M") if dt.minute else dt.strftime("%Hh")
+    return f"{FR_WEEKDAYS[dt.weekday()]} {dt.day} {FR_MONTHS[dt.month - 1]} {dt.year} à {time_part}"
+
+
+class EventOption(db.Model):
+    """A candidate date/time for the party. The admin offers whichever
+    options are configured here; guests self-select among them when
+    confirming their presence -- there is no single authoritative date."""
+
+    __tablename__ = "event_options"
+
+    id = db.Column(db.Integer, primary_key=True)
+    label = db.Column(db.String(255), nullable=True)
+    starts_at = db.Column(db.DateTime, nullable=False)
+    created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
+
+    @property
+    def display_text(self):
+        formatted = format_date_fr(self.starts_at)
+        return f"{self.label} — {formatted}" if self.label else formatted
 
 
 EMAIL_VARIABLES = {

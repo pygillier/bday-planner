@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileField, FileRequired
-from wtforms import StringField, TextAreaField
+from wtforms import DateTimeLocalField, StringField, TextAreaField
 from wtforms.validators import DataRequired, Email, Length, Optional
 
 
@@ -15,6 +15,15 @@ class ImportForm(FlaskForm):
     csv_file = FileField(
         "Fichier CSV",
         validators=[FileRequired(), FileAllowed(["csv"], "Fichier CSV uniquement.")],
+    )
+
+
+class EventOptionForm(FlaskForm):
+    label = StringField(
+        "Intitulé (facultatif)", validators=[Optional(), Length(max=255)]
+    )
+    starts_at = DateTimeLocalField(
+        "Date et heure", format="%Y-%m-%dT%H:%M", validators=[DataRequired()]
     )
 
 

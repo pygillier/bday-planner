@@ -11,6 +11,9 @@
   {% if guest.rsvp_status == "confirmed" %}
     <span class="status-pill status-pill--confirmed">Vous avez confirmé votre présence</span>
     <h1 class="headline">Bonjour {{ guest.first_name }}, à bientôt !</h1>
+    {% if guest.event_option %}
+      <p class="thank-you__note">Date choisie : {{ guest.event_option.display_text }}</p>
+    {% endif %}
     <a class="btn btn-primary" href="{{ url_for('guest.details', token=guest.token) }}">Modifier mes informations</a>
     <form method="post" action="{{ url_for('guest.decline', token=guest.token) }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

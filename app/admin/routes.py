@@ -14,7 +14,7 @@ from flask import (
 
 from app.admin import admin_bp
 from app.admin.csv_import import import_guests_from_csv
-from app.admin.forms import EmailTemplateForm, GuestForm, ImportForm
+from app.admin.forms import EmailTemplateForm, EventOptionForm, GuestForm, ImportForm
 from app.emails import (
     preview_context,
     render_invitation_body,
@@ -23,7 +23,7 @@ from app.emails import (
     send_test_email,
 )
 from app.extensions import db, oauth
-from app.models import EMAIL_VARIABLES, EmailTemplate, Guest
+from app.models import EMAIL_VARIABLES, EmailTemplate, EventOption, Guest
 
 PUBLIC_ENDPOINTS = {"admin.login", "admin.login_pocketid", "admin.auth_callback"}
 
@@ -74,7 +74,19 @@ def dashboard():
         "pending": sum(1 for g in guests if g.rsvp_status == "pending"),
     }
     total_headcount = sum(g.headcount for g in guests)
-    return render_template("admin/dashboard.html", counts=counts, total_headcount=total_headcount)
+
+    options = EventOption.query.order_by(EventOption.starts_at).all()
+    date_breakdown = [
+        (option, sum(g.headcount for g in guests if g.event_option_id == option.id))
+        for option in options
+    ]
+
+    return render_template(
+        "admin/dashboard.html",
+        counts=counts,
+        total_headcount=total_headcount,
+        date_breakdown=date_breakdown,
+    )
 
 
 @admin_bp.route("/guests")
@@ -209,26 +221,78 @@ def email_template():
     )
 
 
+@admin_bp.route("/dates")
+def event_options_list():
+    options = EventOption.query.order_by(EventOption.starts_at).all()
+    return render_template("admin/event_options.html", options=options)
+
+
+@admin_bp.route("/dates/new", methods=["GET", "POST"])
+def new_event_option():
+    form = EventOptionForm()
+    if form.validate_on_submit():
+        option = EventOption()
+        form.populate_obj(option)
+        db.session.add(option)
+        db.session.commit()
+        flash("Date ajoutée.", "success")
+        return redirect(url_for("admin.event_options_list"))
+    return render_template("admin/event_option_form.html", form=form, option=None)
+
+
+@admin_bp.route("/dates/<int:option_id>/edit", methods=["GET", "POST"])
+def edit_event_option(option_id):
+    option = EventOption.query.get_or_404(option_id)
+    form = EventOptionForm(obj=option)
+    if form.validate_on_submit():
+        form.populate_obj(option)
+        db.session.commit()
+        flash("Date mise à jour.", "success")
+        return redirect(url_for("admin.event_options_list"))
+    return render_template("admin/event_option_form.html", form=form, option=option)
+
+
+@admin_bp.route("/dates/<int:option_id>/delete", methods=["POST"])
+def delete_event_option(option_id):
+    option = EventOption.query.get_or_404(option_id)
+    if option.guests:
+        flash(
+            "Impossible de supprimer cette date : des invité·e·s l'ont déjà choisie.",
+            "error",
+        )
+    else:
+        db.session.delete(option)
+        db.session.commit()
+        flash("Date supprimée.", "success")
+    return redirect(url_for("admin.event_options_list"))
+
+
 @admin_bp.route("/export.csv")
 def export_csv():
     guests = Guest.query.order_by(Guest.last_name, Guest.first_name).all()
     buffer = io.StringIO()
     writer = csv.writer(buffer)
-    writer.writerow(["Nom", "Statut", "Allergies / notes", "Accompagnant", "Allergies accompagnant"])
+    writer.writerow(
+        ["Nom", "Statut", "Date choisie", "Allergies / notes", "Accompagnant", "Allergies accompagnant"]
+    )
     for guest in guests:
+        event_date = guest.event_option.display_text if guest.event_option else ""
         if guest.plus_ones:
             for index, plus_one in enumerate(guest.plus_ones, start=1):
                 writer.writerow(
                     [
                         guest.full_name,
                         guest.rsvp_status,
+                        event_date,
                         guest.dietary_notes or "",
                         f"Accompagnant {index}",
                         plus_one.dietary_notes or "",
                     ]
                 )
         else:
-            writer.writerow([guest.full_name, guest.rsvp_status, guest.dietary_notes or "", "", ""])
+            writer.writerow(
+                [guest.full_name, guest.rsvp_status, event_date, guest.dietary_notes or "", "", ""]
+            )
 
     return Response(
         buffer.getvalue(),

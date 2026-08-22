@@ -166,6 +166,39 @@ body.guest {
 }
 .field textarea { min-height: 6rem; resize: vertical; }
 
+.field-error {
+  color: var(--error);
+  font-size: 0.9rem;
+  margin: 0.5rem 0 0;
+}
+
+.radio-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border: 2px solid var(--stone);
+  border-radius: 0.75rem;
+  background: var(--white);
+  font-weight: 500;
+  cursor: pointer;
+}
+.radio-option:has(input:checked) {
+  border-color: var(--bordeaux);
+  background: rgba(122, 35, 49, 0.06);
+}
+.radio-option input {
+  width: 1.15rem;
+  height: 1.15rem;
+  accent-color: var(--bordeaux);
+  flex-shrink: 0;
+}
+
 .plus-one {
   border: 1px solid var(--stone);
   border-radius: 0.75rem;

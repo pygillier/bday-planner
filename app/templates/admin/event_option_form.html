@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% from "admin/_shell.html" import sidebar %}
+{% block title %}{{ "Modifier" if option else "Ajouter" }} une date — 80 ans{% endblock %}
+{% block body_class %}admin{% endblock %}
+{% block content %}
+<div class="admin-shell">
+  {{ sidebar("event_options") }}
+  <main class="admin-main">
+    <div class="admin-header">
+      <h1>{{ "Modifier" if option else "Ajouter" }} une date</h1>
+    </div>
+
+    <form method="post" style="max-width:28rem;">
+      {{ form.csrf_token }}
+      <div class="field">
+        {{ form.starts_at.label }}
+        {{ form.starts_at() }}
+      </div>
+      <div class="field">
+        {{ form.label.label }}
+        {{ form.label(placeholder="ex. Brunch du dimanche") }}
+      </div>
+      <button type="submit" class="btn-sm btn-sm--primary">Enregistrer</button>
+      <a class="btn-sm" href="{{ url_for('admin.event_options_list') }}">Annuler</a>
+    </form>
+  </main>
+</div>
+{% endblock %}

@@ -7,6 +7,23 @@
 
   <form method="post" action="{{ url_for('guest.details', token=guest.token) }}">
     {{ form.csrf_token }}
+
+    {% if options %}
+    <div class="field">
+      {{ form.event_option_id.label }}
+      <div class="radio-options">
+        {% for subfield in form.event_option_id %}
+          <label class="radio-option">
+            {{ subfield }} {{ subfield.label.text }}
+          </label>
+        {% endfor %}
+      </div>
+      {% if form.event_option_id.errors %}
+        <p class="field-error">{{ form.event_option_id.errors[0] }}</p>
+      {% endif %}
+    </div>
+    {% endif %}
+
     <div class="field">
       {{ form.dietary_notes.label }}
       {{ form.dietary_notes(placeholder="Allergies, régime particulier, autre chose à savoir...") }}

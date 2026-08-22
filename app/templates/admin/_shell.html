@@ -4,6 +4,7 @@
   <nav>
     <a href="{{ url_for('admin.dashboard') }}" class="{{ 'active' if active == 'dashboard' }}">Tableau de bord</a>
     <a href="{{ url_for('admin.guests_list') }}" class="{{ 'active' if active == 'guests' }}">Invité·e·s</a>
+    <a href="{{ url_for('admin.event_options_list') }}" class="{{ 'active' if active == 'event_options' }}">Dates possibles</a>
     <a href="{{ url_for('admin.email_template') }}" class="{{ 'active' if active == 'email_template' }}">Modèle d'e-mail</a>
     <a href="{{ url_for('admin.export_csv') }}">Exporter (CSV)</a>
   </nav>

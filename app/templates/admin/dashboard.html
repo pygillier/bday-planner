@@ -29,6 +29,20 @@
       </div>
     </div>
 
+    {% if date_breakdown %}
+    <h2 style="margin-top:2.5rem;">Répartition par date</h2>
+    <table class="admin-table" style="max-width:36rem; margin-bottom:2rem;">
+      <thead>
+        <tr><th>Date</th><th>Présent·e·s (avec accompagnants)</th></tr>
+      </thead>
+      <tbody>
+        {% for option, headcount in date_breakdown %}
+        <tr><td>{{ option.display_text }}</td><td>{{ headcount }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+
     <a class="btn-sm btn-sm--primary" href="{{ url_for('admin.guests_list') }}">Voir la liste des invité·e·s</a>
   </main>
 </div>

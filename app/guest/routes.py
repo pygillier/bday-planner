@@ -3,7 +3,7 @@ from flask import abort, redirect, render_template, request, url_for
 from app.extensions import db
 from app.guest import guest_bp
 from app.guest.forms import DetailsForm
-from app.models import Guest, PlusOne, utcnow
+from app.models import EventOption, Guest, PlusOne, utcnow
 
 
 def _get_guest_or_404(token):
@@ -48,9 +48,14 @@ def details(token):
     if guest.rsvp_status != "confirmed":
         return redirect(url_for("guest.landing", token=token))
 
+    options = EventOption.query.order_by(EventOption.starts_at).all()
     form = DetailsForm(obj=guest)
+    form.set_event_options(options)
+
     if form.validate_on_submit():
         guest.dietary_notes = form.dietary_notes.data
+        if options:
+            guest.event_option_id = form.event_option_id.data
         for plus_one, notes in zip(
             guest.plus_ones, request.form.getlist("plus_one_notes")
         ):
@@ -59,7 +64,7 @@ def details(token):
         db.session.commit()
         return redirect(url_for("guest.thank_you", token=token))
 
-    return render_template("guest/details.html", guest=guest, form=form)
+    return render_template("guest/details.html", guest=guest, form=form, options=options)
 
 
 @guest_bp.route("/<token>/details/plus-one/add", methods=["POST"])

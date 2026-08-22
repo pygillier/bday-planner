@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% from "admin/_shell.html" import sidebar %}
+{% block title %}Dates possibles — 80 ans{% endblock %}
+{% block body_class %}admin{% endblock %}
+{% block content %}
+<div class="admin-shell">
+  {{ sidebar("event_options") }}
+  <main class="admin-main">
+    <div class="admin-header">
+      <h1>Dates possibles</h1>
+      <div class="actions-row">
+        <a class="btn-sm btn-sm--primary" href="{{ url_for('admin.new_event_option') }}">+ Ajouter une date</a>
+      </div>
+    </div>
+
+    <p style="color:var(--stone-dark); font-size:0.9rem; max-width:36rem;">
+      Les invité·e·s choisissent parmi ces dates en confirmant leur présence. S'il n'y en a qu'une seule (ou aucune), aucun choix ne leur est demandé.
+    </p>
+
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Date et heure</th>
+          <th>Intitulé</th>
+          <th>Invité·e·s ayant choisi cette date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for option in options %}
+        <tr>
+          <td>{{ option.display_text }}</td>
+          <td>{{ option.label or "—" }}</td>
+          <td>{{ option.guests|length }}</td>
+          <td>
+            <div class="actions-row">
+              <a class="btn-sm" href="{{ url_for('admin.edit_event_option', option_id=option.id) }}">Modifier</a>
+              <form method="post" action="{{ url_for('admin.delete_event_option', option_id=option.id) }}" onsubmit="return confirm('Supprimer cette date ?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn-sm">Supprimer</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4">Aucune date configurée pour le moment.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </main>
+</div>
+{% endblock %}
