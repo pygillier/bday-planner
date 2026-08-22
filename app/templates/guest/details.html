@@ -10,16 +10,16 @@
 
     {% if options %}
     <div class="field">
-      {{ form.event_option_id.label }}
+      {{ form.event_option_ids.label }}
       <div class="radio-options">
-        {% for subfield in form.event_option_id %}
+        {% for subfield in form.event_option_ids %}
           <label class="radio-option">
             {{ subfield }} {{ subfield.label.text }}
           </label>
         {% endfor %}
       </div>
-      {% if form.event_option_id.errors %}
-        <p class="field-error">{{ form.event_option_id.errors[0] }}</p>
+      {% if form.event_option_ids.errors %}
+        <p class="field-error">{{ form.event_option_ids.errors[0] }}</p>
       {% endif %}
     </div>
     {% endif %}

@@ -301,6 +301,10 @@ body.admin {
 }
 .stat-tile__value { font-size: 1.75rem; font-weight: 700; }
 .stat-tile__label { color: var(--stone-dark); font-size: 0.9rem; }
+.stat-tile--highlight {
+  border-color: var(--bordeaux);
+  background: rgba(122, 35, 49, 0.06);
+}
 
 table.admin-table {
   width: 100%;

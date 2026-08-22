@@ -77,15 +77,21 @@ def dashboard():
 
     options = EventOption.query.order_by(EventOption.starts_at).all()
     date_breakdown = [
-        (option, sum(g.headcount for g in guests if g.event_option_id == option.id))
+        (option, sum(g.headcount for g in guests if option in g.event_options))
         for option in options
     ]
+    best_date = None
+    if date_breakdown:
+        top_option, top_headcount = max(date_breakdown, key=lambda pair: pair[1])
+        if top_headcount > 0:
+            best_date = (top_option, top_headcount)
 
     return render_template(
         "admin/dashboard.html",
         counts=counts,
         total_headcount=total_headcount,
         date_breakdown=date_breakdown,
+        best_date=best_date,
     )
 
 
@@ -197,13 +203,16 @@ def email_template():
         if action == "test":
             if not form.test_email.data:
                 flash("Indiquez une adresse e-mail pour l'envoi de test.", "error")
-            elif send_test_email(form.test_email.data, form.subject.data, form.body.data):
+            elif send_test_email(
+                form.test_email.data, form.subject.data, form.body.data, form.signature.data
+            ):
                 flash(f"E-mail de test envoyé à {form.test_email.data}.", "success")
             else:
                 flash("Échec de l'envoi de l'e-mail de test.", "error")
         else:
             template.subject = form.subject.data
             template.body = form.body.data
+            template.signature = form.signature.data or ""
             db.session.commit()
             flash("Modèle d'e-mail mis à jour.", "success")
             return redirect(url_for("admin.email_template"))
@@ -211,6 +220,9 @@ def email_template():
     context = preview_context()
     preview_subject = render_invitation_subject(form.subject.data or template.subject, context)
     preview_body = render_invitation_body(form.body.data or template.body, context)
+    preview_signature = render_invitation_body(
+        form.signature.data if form.signature.data is not None else template.signature, context
+    )
 
     return render_template(
         "admin/email_template.html",
@@ -218,6 +230,7 @@ def email_template():
         variables=EMAIL_VARIABLES,
         preview_subject=preview_subject,
         preview_body=preview_body,
+        preview_signature=preview_signature,
     )
 
 
@@ -273,10 +286,10 @@ def export_csv():
     buffer = io.StringIO()
     writer = csv.writer(buffer)
     writer.writerow(
-        ["Nom", "Statut", "Date choisie", "Allergies / notes", "Accompagnant", "Allergies accompagnant"]
+        ["Nom", "Statut", "Dates disponibles", "Allergies / notes", "Accompagnant", "Allergies accompagnant"]
     )
     for guest in guests:
-        event_date = guest.event_option.display_text if guest.event_option else ""
+        event_date = ", ".join(option.display_text for option in guest.event_options)
         if guest.plus_ones:
             for index, plus_one in enumerate(guest.plus_ones, start=1):
                 writer.writerow(

@@ -30,6 +30,7 @@ class EventOptionForm(FlaskForm):
 class EmailTemplateForm(FlaskForm):
     subject = StringField("Objet de l'e-mail", validators=[DataRequired(), Length(max=255)])
     body = TextAreaField("Message", validators=[DataRequired(), Length(max=5000)])
+    signature = TextAreaField("Signature (facultatif, affichée après le bouton)", validators=[Optional(), Length(max=2000)])
     test_email = StringField(
         "Adresse de test", validators=[Optional(), Email(), Length(max=255)]
     )

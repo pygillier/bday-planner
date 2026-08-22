@@ -46,7 +46,7 @@ def preview_context():
     }
 
 
-def send_test_email(to_email, subject_template, body_template):
+def send_test_email(to_email, subject_template, body_template, signature_template=""):
     """Send a preview of the invitation email to an arbitrary address, using
     sample placeholder values. Not tied to a guest -- no InvitationLog row,
     no guest state changes. Returns True/False, never raises."""
@@ -54,7 +54,10 @@ def send_test_email(to_email, subject_template, body_template):
     context = preview_context()
     subject = render_invitation_subject(subject_template, context)
     body_html = render_invitation_body(body_template, context)
-    html = render_template("emails/invitation.html", rsvp_url=context["lien"], body_html=body_html)
+    signature_html = render_invitation_body(signature_template, context)
+    html = render_template(
+        "emails/invitation.html", rsvp_url=context["lien"], body_html=body_html, signature_html=signature_html
+    )
 
     try:
         resend.Emails.send(
@@ -84,8 +87,11 @@ def send_invitation_email(guest):
     context = {"prenom": guest.first_name, "nom": guest.last_name, "lien": rsvp_url}
     subject = render_invitation_subject(template.subject, context)
     body_html = render_invitation_body(template.body, context)
+    signature_html = render_invitation_body(template.signature, context)
 
-    html = render_template("emails/invitation.html", rsvp_url=rsvp_url, body_html=body_html)
+    html = render_template(
+        "emails/invitation.html", rsvp_url=rsvp_url, body_html=body_html, signature_html=signature_html
+    )
 
     log = InvitationLog(guest_id=guest.id)
     try:

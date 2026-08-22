@@ -55,7 +55,8 @@ def details(token):
     if form.validate_on_submit():
         guest.dietary_notes = form.dietary_notes.data
         if options:
-            guest.event_option_id = form.event_option_id.data
+            selected_ids = set(form.event_option_ids.data)
+            guest.event_options = [option for option in options if option.id in selected_ids]
         for plus_one, notes in zip(
             guest.plus_ones, request.form.getlist("plus_one_notes")
         ):

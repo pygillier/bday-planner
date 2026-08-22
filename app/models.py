@@ -8,6 +8,13 @@ def utcnow():
     return datetime.now(UTC)
 
 
+guest_event_options = db.Table(
+    "guest_event_options",
+    db.Column("guest_id", db.Integer, db.ForeignKey("guests.id"), primary_key=True),
+    db.Column("event_option_id", db.Integer, db.ForeignKey("event_options.id"), primary_key=True),
+)
+
+
 class Guest(db.Model):
     __tablename__ = "guests"
 
@@ -23,8 +30,6 @@ class Guest(db.Model):
 
     rsvp_status = db.Column(db.String(20), nullable=False, default="pending")
     rsvp_updated_at = db.Column(db.DateTime, nullable=True)
-
-    event_option_id = db.Column(db.Integer, db.ForeignKey("event_options.id"), nullable=True)
 
     dietary_notes = db.Column(db.Text, nullable=True)
 
@@ -42,7 +47,12 @@ class Guest(db.Model):
     invitation_logs = db.relationship(
         "InvitationLog", backref="guest", cascade="all, delete-orphan", order_by="InvitationLog.sent_at.desc()"
     )
-    event_option = db.relationship("EventOption", backref="guests")
+    event_options = db.relationship(
+        "EventOption",
+        secondary=guest_event_options,
+        backref="guests",
+        order_by="EventOption.starts_at",
+    )
 
     @property
     def full_name(self):
@@ -95,8 +105,9 @@ def format_date_fr(dt):
 
 class EventOption(db.Model):
     """A candidate date/time for the party. The admin offers whichever
-    options are configured here; guests self-select among them when
-    confirming their presence -- there is no single authoritative date."""
+    options are configured here; guests may select several of them --
+    whichever they'd be available for -- and the organizer picks the
+    final date from the aggregated answers."""
 
     __tablename__ = "event_options"
 
@@ -140,6 +151,7 @@ class EmailTemplate(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     subject = db.Column(db.String(255), nullable=False, default=DEFAULT_EMAIL_SUBJECT)
     body = db.Column(db.Text, nullable=False, default=DEFAULT_EMAIL_BODY)
+    signature = db.Column(db.Text, nullable=False, default="")
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow, nullable=False)
 
     @classmethod

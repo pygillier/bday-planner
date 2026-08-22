@@ -23,7 +23,7 @@
         <tr>
           <th>Nom</th>
           <th>Statut</th>
-          <th>Date choisie</th>
+          <th>Dates disponibles</th>
           <th>Accompagnants</th>
           <th>Invitation envoyée</th>
           <th>Actions</th>
@@ -34,7 +34,7 @@
         <tr>
           <td>{{ guest.full_name }}</td>
           <td><span class="badge badge--{{ guest.rsvp_status }}">{{ guest.rsvp_status }}</span></td>
-          <td>{{ guest.event_option.display_text if guest.event_option else "—" }}</td>
+          <td>{{ guest.event_options|map(attribute="display_text")|join(", ") if guest.event_options else "—" }}</td>
           <td>{{ guest.plus_ones|length }}</td>
           <td>{{ "Oui" if guest.invitation_sent_at else "Non" }}</td>
           <td>

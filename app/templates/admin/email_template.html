@@ -32,6 +32,10 @@
         {{ form.body.label }}
         {{ form.body(rows=8) }}
       </div>
+      <div class="field">
+        {{ form.signature.label }}
+        {{ form.signature(rows=4) }}
+      </div>
       <button type="submit" name="action" value="save" class="btn-sm btn-sm--primary">Enregistrer</button>
 
       <h2 style="margin-top:2.5rem;">Aperçu</h2>
@@ -39,6 +43,10 @@
       <div style="border:1px solid var(--stone); border-radius:0.75rem; padding:1.5rem; background:var(--white);">
         <p style="margin:0 0 1rem; font-weight:600;">Objet : {{ preview_subject }}</p>
         <div>{{ preview_body }}</div>
+        <p style="margin:1rem 0 0; padding-top:1rem; border-top:1px solid var(--stone); color:var(--stone-dark); font-size:0.85rem;">Bouton « Confirmer ma présence »</p>
+        {% if preview_signature %}
+        <div style="margin-top:0.5rem;">{{ preview_signature }}</div>
+        {% endif %}
       </div>
 
       <h2 style="margin-top:2.5rem;">Tester l'envoi</h2>

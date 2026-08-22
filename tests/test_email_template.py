@@ -93,9 +93,39 @@ def test_email_template_route_saves_changes(admin_client):
     assert template.body == "Nouveau corps"
 
 
+def test_email_template_route_saves_signature(admin_client):
+    response = admin_client.post(
+        "/admin/email-template",
+        data={
+            "subject": "Objet",
+            "body": "Corps",
+            "signature": "À bientôt,\nL'organisateur",
+            "action": "save",
+        },
+    )
+    assert response.status_code == 302
+    template = EmailTemplate.get_current()
+    assert template.signature == "À bientôt,\nL'organisateur"
+
+
+def test_send_test_email_includes_signature(app, monkeypatch):
+    sent = {}
+
+    def fake_send(payload):
+        sent.update(payload)
+        return {"id": "test-message-id"}
+
+    monkeypatch.setattr("app.emails.resend.Emails.send", fake_send)
+
+    with app.test_request_context():
+        send_test_email("someone@example.com", "Objet", "Corps", "À bientôt,\nL'organisateur")
+
+    assert "À bientôt" in sent["html"]
+
+
 def test_email_template_route_test_send_does_not_persist(admin_client, monkeypatch):
     monkeypatch.setattr(
-        "app.admin.routes.send_test_email", lambda to, subject, body: True
+        "app.admin.routes.send_test_email", lambda to, subject, body, signature="": True
     )
     original = EmailTemplate.get_current()
     original_subject = original.subject
