@@ -2,11 +2,13 @@ from flask import Flask
 
 from app.config import Config
 from app.extensions import csrf, db, migrate, oauth
+from app.logging_config import setup_logging
 
 
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
+    setup_logging(app)
 
     if not app.testing:
         missing = [

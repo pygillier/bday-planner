@@ -1,5 +1,6 @@
 import resend
 from flask import current_app, render_template, url_for
+from loguru import logger
 from markupsafe import Markup, escape
 
 from app.extensions import db
@@ -66,6 +67,7 @@ def send_test_email(to_email, subject_template, body_template):
         )
         return True
     except Exception:  # noqa: BLE001 -- Resend SDK can raise several error types
+        logger.exception("Failed to send test email to {}", to_email)
         return False
 
 
@@ -101,8 +103,10 @@ def send_invitation_email(guest):
         guest.invitation_sent_at = db.func.now()
         guest.invitation_sent_count = (guest.invitation_sent_count or 0) + 1
         db.session.commit()
+        logger.info("Invitation email sent to guest {} ({})", guest.id, guest.email)
         return True
     except Exception as exc:  # noqa: BLE001 -- Resend SDK can raise several error types
+        logger.exception("Failed to send invitation email to guest {} ({}) - {}", guest.id, guest.email, exc)
         log.status = "failed"
         log.error_message = str(exc)
         db.session.add(log)

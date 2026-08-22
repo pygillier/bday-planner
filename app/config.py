@@ -6,6 +6,8 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+    LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
+
     RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
     RESEND_FROM_EMAIL = os.environ.get("RESEND_FROM_EMAIL")
 
@@ -20,6 +22,7 @@ class Config:
 
 class TestConfig:
     TESTING = True
+    LOG_LEVEL = "WARNING"
     SECRET_KEY = "test-secret-key"
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
