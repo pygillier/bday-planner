@@ -47,7 +47,25 @@ See `Taskfile.yml` (`task --list`) for the rest of the day-to-day commands: `mig
 
 ## Deploying
 
-The Compose setup is hosting-agnostic — it works on any Docker host. Put it behind a reverse proxy with TLS (Caddy, Traefik, nginx…); that's not included here. `SESSION_COOKIE_SECURE` is enabled outside of local dev, so admin login requires HTTPS in production.
+The app is published as a container image to GHCR on every version tag (see below), and production runs off that image rather than building from source.
+
+1. On the Docker host, copy `docker-compose.prod.yml` and a filled-in `.env` (same variables as local `.env`, but pointing at real Resend/Pocket ID/Postgres credentials, with `SESSION_COOKIE_SECURE` implications in mind — see step 3 below).
+2. Pull and start the stack:
+
+   ```bash
+   task deploy
+   ```
+
+   This pulls `ghcr.io/pygillier/bday-planner:latest` and (re)starts `web` + `db` via `docker-compose.prod.yml`, running pending migrations automatically on boot. Re-run `task deploy` after each release to update.
+3. Put it behind a reverse proxy with TLS (Caddy, Traefik, nginx…) — that's not included here. `SESSION_COOKIE_SECURE` is enabled outside of local dev, so admin login requires HTTPS in production.
+
+### Releasing a new version
+
+```bash
+task tag -- patch   # or: minor / major
+```
+
+This bumps the last `vX.Y.Z` git tag per [semver](https://semver.org) and pushes it, which triggers a GitHub Actions workflow ([.github/workflows/publish.yml](.github/workflows/publish.yml)) that builds the image, pushes it to GHCR tagged with the version (plus rolling `major.minor`, `major`, and `latest` tags), and creates a GitHub release with the image reference and auto-generated changelog.
 
 ## Project layout
 

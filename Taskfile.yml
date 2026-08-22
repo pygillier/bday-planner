@@ -51,6 +51,12 @@ tasks:
     cmds:
       - docker compose exec web ruff format .
 
+  deploy:
+    desc: Pull the latest published image and (re)start the production stack
+    cmds:
+      - docker compose -f docker-compose.prod.yml pull web
+      - docker compose -f docker-compose.prod.yml up -d
+
   tag:
     desc: 'Create and push a semver release tag -- usage: task tag -- major|minor|patch'
     cmds:
