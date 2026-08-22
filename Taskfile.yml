@@ -50,3 +50,35 @@ tasks:
     desc: Auto-format the codebase
     cmds:
       - docker compose exec web ruff format .
+
+  tag:
+    desc: 'Create and push a semver release tag -- usage: task tag -- major|minor|patch'
+    cmds:
+      - |
+        set -e
+        bump="{{.CLI_ARGS}}"
+        case "$bump" in
+          major|minor|patch) ;;
+          *) echo "Usage: task tag -- major|minor|patch"; exit 1 ;;
+        esac
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "Working tree is not clean, aborting"; exit 1
+        fi
+        latest=$(git tag --list 'v*.*.*' --sort=-v:refname | head -n1)
+        if [ -z "$latest" ]; then
+          major=0; minor=0; patch=0
+        else
+          version=${latest#v}
+          major=$(echo "$version" | cut -d. -f1)
+          minor=$(echo "$version" | cut -d. -f2)
+          patch=$(echo "$version" | cut -d. -f3)
+        fi
+        case "$bump" in
+          major) major=$((major + 1)); minor=0; patch=0 ;;
+          minor) minor=$((minor + 1)); patch=0 ;;
+          patch) patch=$((patch + 1)) ;;
+        esac
+        newtag="v${major}.${minor}.${patch}"
+        echo "Tagging ${newtag} (previous: ${latest:-none})"
+        git tag -a "$newtag" -m "$newtag"
+        git push origin "$newtag"
