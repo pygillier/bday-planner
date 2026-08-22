@@ -1,4 +1,5 @@
 from flask import Flask
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from app.config import Config
 from app.extensions import csrf, db, migrate, oauth
@@ -9,6 +10,9 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
     setup_logging(app)
+
+    if app.config.get("BEHIND_PROXY"):
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
     if not app.testing:
         missing = [

@@ -19,6 +19,8 @@ class Config:
     SESSION_COOKIE_SAMESITE = "Lax"
     SESSION_COOKIE_SECURE = os.environ.get("FLASK_ENV") == "production"
 
+    BEHIND_PROXY = os.environ.get("BEHIND_PROXY", "false").lower() == "true"
+
 
 class TestConfig:
     TESTING = True
