@@ -87,4 +87,4 @@ tasks:
         newtag="v${major}.${minor}.${patch}"
         echo "Tagging ${newtag} (previous: ${latest:-none})"
         git tag -a "$newtag" -m "$newtag"
-        git push origin "$newtag"
+        git push origin --tags

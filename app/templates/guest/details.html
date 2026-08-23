@@ -14,7 +14,7 @@
       <div class="radio-options">
         {% for subfield in form.event_option_ids %}
           <label class="radio-option">
-            {{ subfield }} {{ subfield.label.text }}
+            {{ subfield(required=False) }} {{ subfield.label.text }}
           </label>
         {% endfor %}
       </div>

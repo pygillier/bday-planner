@@ -31,6 +31,28 @@
       <button type="submit" class="btn-sm btn-sm--primary">Enregistrer</button>
       <a class="btn-sm" href="{{ url_for('admin.guests_list') }}">Annuler</a>
     </form>
+
+    {% if guest %}
+    <h2 style="margin-top:2rem;">Journal</h2>
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Action</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in guest.event_logs %}
+        <tr>
+          <td>{{ entry.label }}</td>
+          <td>{{ entry.created_at.strftime("%d/%m/%Y %Hh%M") }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="2">Aucune action enregistrée pour le moment.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
   </main>
 </div>
 {% endblock %}

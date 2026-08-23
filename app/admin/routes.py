@@ -23,7 +23,7 @@ from app.emails import (
     send_test_email,
 )
 from app.extensions import db, oauth
-from app.models import EMAIL_VARIABLES, EmailTemplate, EventOption, Guest
+from app.models import EMAIL_VARIABLES, EmailTemplate, EventOption, Guest, GuestEventLog
 
 PUBLIC_ENDPOINTS = {"admin.login", "admin.login_pocketid", "admin.auth_callback"}
 
@@ -278,6 +278,17 @@ def delete_event_option(option_id):
         db.session.commit()
         flash("Date supprimée.", "success")
     return redirect(url_for("admin.event_options_list"))
+
+
+@admin_bp.route("/journal")
+def journal():
+    entries = (
+        GuestEventLog.query.join(Guest)
+        .order_by(GuestEventLog.created_at.desc())
+        .limit(200)
+        .all()
+    )
+    return render_template("admin/journal.html", entries=entries)
 
 
 @admin_bp.route("/export.csv")

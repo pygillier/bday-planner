@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from "admin/_shell.html" import sidebar %}
+{% block title %}Journal — 80 ans{% endblock %}
+{% block body_class %}admin{% endblock %}
+{% block content %}
+<div class="admin-shell">
+  {{ sidebar("journal") }}
+  <main class="admin-main">
+    <div class="admin-header">
+      <h1>Journal</h1>
+    </div>
+
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Invité·e</th>
+          <th>Action</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in entries %}
+        <tr>
+          <td><a href="{{ url_for('admin.edit_guest', guest_id=entry.guest_id) }}">{{ entry.guest.full_name }}</a></td>
+          <td>{{ entry.label }}</td>
+          <td>{{ entry.created_at.strftime("%d/%m/%Y %Hh%M") }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="3">Aucune action enregistrée pour le moment.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </main>
+</div>
+{% endblock %}

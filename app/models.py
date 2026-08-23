@@ -47,6 +47,9 @@ class Guest(db.Model):
     invitation_logs = db.relationship(
         "InvitationLog", backref="guest", cascade="all, delete-orphan", order_by="InvitationLog.sent_at.desc()"
     )
+    event_logs = db.relationship(
+        "GuestEventLog", backref="guest", cascade="all, delete-orphan", order_by="GuestEventLog.created_at.desc()"
+    )
     event_options = db.relationship(
         "EventOption",
         secondary=guest_event_options,
@@ -88,6 +91,29 @@ class InvitationLog(db.Model):
     resend_message_id = db.Column(db.String(120), nullable=True)
     status = db.Column(db.String(20), nullable=False, default="sent")
     error_message = db.Column(db.Text, nullable=True)
+
+
+GUEST_EVENT_LABELS = {
+    "confirmed": "A confirmé sa présence",
+    "declined": "A décliné l'invitation",
+    "updated": "A mis à jour ses informations",
+}
+
+
+class GuestEventLog(db.Model):
+    """Audit trail of guest-initiated actions (RSVP + detail updates), for the admin."""
+
+    __tablename__ = "guest_event_logs"
+
+    id = db.Column(db.Integer, primary_key=True)
+    guest_id = db.Column(db.Integer, db.ForeignKey("guests.id"), nullable=False)
+    event_type = db.Column(db.String(30), nullable=False)
+    detail = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
+
+    @property
+    def label(self):
+        return GUEST_EVENT_LABELS.get(self.event_type, self.event_type)
 
 
 FR_WEEKDAYS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
