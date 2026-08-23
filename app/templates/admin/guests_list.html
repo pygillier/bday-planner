@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "admin/_shell.html" import sidebar %}
-{% block title %}Invité·e·s — 80 ans{% endblock %}
+{% block title %}Invité·e·s — {{ site_title }}{% endblock %}
 {% block body_class %}admin{% endblock %}
 {% block content %}
 <div class="admin-shell">
@@ -38,25 +38,35 @@
           <td>{{ guest.plus_ones|length }}</td>
           <td>{{ "Oui" if guest.invitation_sent_at else "Non" }}</td>
           <td>
-            <div class="actions-row">
-              <a class="btn-sm" href="{{ url_for('admin.edit_guest', guest_id=guest.id) }}">Modifier</a>
-              <button type="button" class="btn-sm btn-copy-link" data-link="{{ url_for('guest.landing', token=guest.token, _external=True) }}">Copier le lien</button>
-              {% if guest.email %}
-              <form method="post" action="{{ url_for('admin.send_invitation', guest_id=guest.id) }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn-sm">Envoyer</button>
-              </form>
-              {% else %}
-              <span class="btn-sm" title="{{ url_for('guest.landing', token=guest.token, _external=True) }}">Pas d'e-mail — lien : {{ guest.token[:8] }}…</span>
-              {% endif %}
-              <form method="post" action="{{ url_for('admin.regenerate_link', guest_id=guest.id) }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn-sm">Régénérer le lien</button>
-              </form>
-              <form method="post" action="{{ url_for('admin.delete_guest', guest_id=guest.id) }}" onsubmit="return confirm('Supprimer {{ guest.full_name }} ?');">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn-sm">Supprimer</button>
-              </form>
+            <div class="split-dropdown">
+              <a class="btn-sm btn-sm--primary split-dropdown__main" href="{{ url_for('admin.edit_guest', guest_id=guest.id) }}">Modifier</a>
+              <button type="button" class="btn-sm btn-sm--primary split-dropdown__toggle" aria-haspopup="true" aria-expanded="false">▾<span class="sr-only">Autres actions pour {{ guest.full_name }}</span></button>
+              <div class="split-dropdown__menu">
+                <button type="button" class="split-dropdown__item btn-copy-link" data-link="{{ url_for('guest.landing', token=guest.token, _external=True) }}">Copier le lien</button>
+                <a class="split-dropdown__item" href="{{ url_for('admin.journal', guest_id=guest.id) }}">Voir le journal</a>
+                {% if guest.email %}
+                <form method="post" action="{{ url_for('admin.send_invitation', guest_id=guest.id) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="split-dropdown__item">Envoyer</button>
+                </form>
+                {% else %}
+                <span class="split-dropdown__item" title="{{ url_for('guest.landing', token=guest.token, _external=True) }}">Pas d'e-mail — lien : {{ guest.token[:8] }}…</span>
+                {% endif %}
+                <form method="post" action="{{ url_for('admin.regenerate_link', guest_id=guest.id) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="split-dropdown__item">Régénérer le lien</button>
+                </form>
+                {% if guest.rsvp_status != "pending" %}
+                <form method="post" action="{{ url_for('admin.reset_answer', guest_id=guest.id) }}" onsubmit="return confirm('Réinitialiser la réponse de {{ guest.full_name }} ? Les dates, accompagnants et allergies seront effacés.');">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="split-dropdown__item">Réinitialiser la réponse</button>
+                </form>
+                {% endif %}
+                <form method="post" action="{{ url_for('admin.delete_guest', guest_id=guest.id) }}" onsubmit="return confirm('Supprimer {{ guest.full_name }} ?');">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="split-dropdown__item split-dropdown__item--danger">Supprimer</button>
+                </form>
+              </div>
             </div>
           </td>
         </tr>
@@ -68,6 +78,34 @@
   </main>
 </div>
 <script>
+  document.addEventListener("click", function (event) {
+    var toggle = event.target.closest(".split-dropdown__toggle");
+    var openDropdown = document.querySelector(".split-dropdown.is-open");
+    if (toggle) {
+      var dropdown = toggle.closest(".split-dropdown");
+      var wasOpen = dropdown.classList.contains("is-open");
+      if (openDropdown) {
+        openDropdown.classList.remove("is-open");
+        openDropdown.querySelector(".split-dropdown__toggle").setAttribute("aria-expanded", "false");
+      }
+      if (!wasOpen) {
+        dropdown.classList.add("is-open");
+        toggle.setAttribute("aria-expanded", "true");
+      }
+      return;
+    }
+    if (openDropdown && !event.target.closest(".split-dropdown__menu")) {
+      openDropdown.classList.remove("is-open");
+      openDropdown.querySelector(".split-dropdown__toggle").setAttribute("aria-expanded", "false");
+    }
+  });
+  document.addEventListener("keydown", function (event) {
+    if (event.key !== "Escape") return;
+    var openDropdown = document.querySelector(".split-dropdown.is-open");
+    if (!openDropdown) return;
+    openDropdown.classList.remove("is-open");
+    openDropdown.querySelector(".split-dropdown__toggle").setAttribute("aria-expanded", "false");
+  });
   document.addEventListener("click", function (event) {
     var button = event.target.closest(".btn-copy-link");
     if (!button) return;

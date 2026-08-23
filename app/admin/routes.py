@@ -14,16 +14,32 @@ from flask import (
 
 from app.admin import admin_bp
 from app.admin.csv_import import import_guests_from_csv
-from app.admin.forms import EmailTemplateForm, EventOptionForm, GuestForm, ImportForm
+from app.admin.forms import (
+    EmailTemplateForm,
+    EventOptionForm,
+    GuestForm,
+    ImportForm,
+    RecapEmailTemplateForm,
+)
 from app.emails import (
     preview_context,
+    recap_preview_context,
     render_invitation_body,
     render_invitation_subject,
     send_invitation_email,
     send_test_email,
+    send_test_recap_email,
 )
 from app.extensions import db, oauth
-from app.models import EMAIL_VARIABLES, EmailTemplate, EventOption, Guest, GuestEventLog
+from app.models import (
+    EMAIL_VARIABLES,
+    RECAP_EMAIL_VARIABLES,
+    EmailTemplate,
+    EventOption,
+    Guest,
+    GuestEventLog,
+    RecapEmailTemplate,
+)
 
 PUBLIC_ENDPOINTS = {"admin.login", "admin.login_pocketid", "admin.auth_callback"}
 
@@ -183,6 +199,22 @@ def send_invitations():
     return redirect(url_for("admin.guests_list"))
 
 
+@admin_bp.route("/guests/<int:guest_id>/reset-answer", methods=["POST"])
+def reset_answer(guest_id):
+    guest = Guest.query.get_or_404(guest_id)
+    guest.rsvp_status = "pending"
+    guest.rsvp_updated_at = None
+    guest.dietary_notes = None
+    guest.event_options = []
+    guest.recap_sent_at = None
+    for plus_one in list(guest.plus_ones):
+        db.session.delete(plus_one)
+    db.session.add(GuestEventLog(guest_id=guest.id, event_type="reset"))
+    db.session.commit()
+    flash(f"Réponse de {guest.full_name} réinitialisée.", "success")
+    return redirect(url_for("admin.guests_list"))
+
+
 @admin_bp.route("/guests/<int:guest_id>/regenerate-link", methods=["POST"])
 def regenerate_link(guest_id):
     guest = Guest.query.get_or_404(guest_id)
@@ -228,6 +260,47 @@ def email_template():
         "admin/email_template.html",
         form=form,
         variables=EMAIL_VARIABLES,
+        preview_subject=preview_subject,
+        preview_body=preview_body,
+        preview_signature=preview_signature,
+    )
+
+
+@admin_bp.route("/recap-email-template", methods=["GET", "POST"])
+def recap_email_template():
+    template = RecapEmailTemplate.get_current()
+    form = RecapEmailTemplateForm(obj=template)
+    action = request.form.get("action")
+
+    if form.validate_on_submit():
+        if action == "test":
+            if not form.test_email.data:
+                flash("Indiquez une adresse e-mail pour l'envoi de test.", "error")
+            elif send_test_recap_email(
+                form.test_email.data, form.subject.data, form.body.data, form.signature.data
+            ):
+                flash(f"E-mail de test envoyé à {form.test_email.data}.", "success")
+            else:
+                flash("Échec de l'envoi de l'e-mail de test.", "error")
+        else:
+            template.subject = form.subject.data
+            template.body = form.body.data
+            template.signature = form.signature.data or ""
+            db.session.commit()
+            flash("Modèle d'e-mail mis à jour.", "success")
+            return redirect(url_for("admin.recap_email_template"))
+
+    context = recap_preview_context()
+    preview_subject = render_invitation_subject(form.subject.data or template.subject, context)
+    preview_body = render_invitation_body(form.body.data or template.body, context)
+    preview_signature = render_invitation_body(
+        form.signature.data if form.signature.data is not None else template.signature, context
+    )
+
+    return render_template(
+        "admin/recap_email_template.html",
+        form=form,
+        variables=RECAP_EMAIL_VARIABLES,
         preview_subject=preview_subject,
         preview_body=preview_body,
         preview_signature=preview_signature,
@@ -282,13 +355,16 @@ def delete_event_option(option_id):
 
 @admin_bp.route("/journal")
 def journal():
-    entries = (
-        GuestEventLog.query.join(Guest)
-        .order_by(GuestEventLog.created_at.desc())
-        .limit(200)
-        .all()
-    )
-    return render_template("admin/journal.html", entries=entries)
+    guest_id = request.args.get("guest_id", type=int)
+    query = GuestEventLog.query.join(Guest).order_by(GuestEventLog.created_at.desc())
+    guest = None
+    if guest_id is not None:
+        guest = Guest.query.get_or_404(guest_id)
+        query = query.filter(GuestEventLog.guest_id == guest_id)
+    else:
+        query = query.limit(200)
+    entries = query.all()
+    return render_template("admin/journal.html", entries=entries, guest=guest)
 
 
 @admin_bp.route("/export.csv")

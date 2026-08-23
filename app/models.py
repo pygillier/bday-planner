@@ -35,6 +35,7 @@ class Guest(db.Model):
 
     invitation_sent_at = db.Column(db.DateTime, nullable=True)
     invitation_sent_count = db.Column(db.Integer, nullable=False, default=0)
+    recap_sent_at = db.Column(db.DateTime, nullable=True)
 
     created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
     updated_at = db.Column(
@@ -97,6 +98,7 @@ GUEST_EVENT_LABELS = {
     "confirmed": "A confirmé sa présence",
     "declined": "A décliné l'invitation",
     "updated": "A mis à jour ses informations",
+    "reset": "Réponse réinitialisée par l'organisateur",
 }
 
 
@@ -185,6 +187,53 @@ class EmailTemplate(db.Model):
         template = db.session.get(cls, 1)
         if template is None:
             template = cls(id=1, subject=DEFAULT_EMAIL_SUBJECT, body=DEFAULT_EMAIL_BODY)
+            db.session.add(template)
+            db.session.commit()
+        return template
+
+
+RECAP_EMAIL_VARIABLES = {
+    "prenom": "Prénom de l'invité·e",
+    "nom": "Nom de l'invité·e",
+    "dates": "Dates choisies par l'invité·e",
+    "accompagnants": "Détail des accompagnant·e·s",
+    "allergies": "Allergies / notes de l'invité·e",
+    "lien": "Lien personnel pour modifier sa réponse",
+}
+
+DEFAULT_RECAP_EMAIL_SUBJECT = "Récapitulatif de votre réponse — 80 ans !"
+
+DEFAULT_RECAP_EMAIL_BODY = (
+    "Bonjour {prenom},\n\n"
+    "Merci pour votre réponse ! Voici un récapitulatif :\n\n"
+    "Dates choisies : {dates}\n"
+    "Accompagnant·e·s : {accompagnants}\n"
+    "Allergies / notes : {allergies}\n\n"
+    "Conservez cet e-mail : vous pourrez revenir à tout moment sur votre réponse "
+    "en cliquant sur le bouton ci-dessous."
+)
+
+
+class RecapEmailTemplate(db.Model):
+    """Single editable template for the recap e-mail sent to a guest the
+    first time they complete the details form (dates, plus-ones, dietary
+    notes). Same substitution model as EmailTemplate -- plain string
+    .replace() + escaping, never Jinja -- for the same reason (see
+    EmailTemplate's docstring)."""
+
+    __tablename__ = "recap_email_templates"
+
+    id = db.Column(db.Integer, primary_key=True)
+    subject = db.Column(db.String(255), nullable=False, default=DEFAULT_RECAP_EMAIL_SUBJECT)
+    body = db.Column(db.Text, nullable=False, default=DEFAULT_RECAP_EMAIL_BODY)
+    signature = db.Column(db.Text, nullable=False, default="")
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow, nullable=False)
+
+    @classmethod
+    def get_current(cls):
+        template = db.session.get(cls, 1)
+        if template is None:
+            template = cls(id=1, subject=DEFAULT_RECAP_EMAIL_SUBJECT, body=DEFAULT_RECAP_EMAIL_BODY)
             db.session.add(template)
             db.session.commit()
         return template

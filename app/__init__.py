@@ -46,4 +46,8 @@ def create_app(config_class=Config):
 
     from app import models  # noqa: F401 -- ensure models are registered with SQLAlchemy
 
+    @app.context_processor
+    def inject_site_title():
+        return {"site_title": app.config["SITE_TITLE"]}
+
     return app

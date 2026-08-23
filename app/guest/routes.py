@@ -1,5 +1,6 @@
 from flask import abort, redirect, render_template, request, url_for
 
+from app.emails import send_recap_email
 from app.extensions import db
 from app.guest import guest_bp
 from app.guest.forms import DetailsForm
@@ -53,6 +54,8 @@ def details(token):
     options = EventOption.query.order_by(EventOption.starts_at).all()
     form = DetailsForm(obj=guest)
     form.set_event_options(options)
+    if request.method == "GET":
+        form.event_option_ids.data = [option.id for option in guest.event_options]
 
     if form.validate_on_submit():
         guest.dietary_notes = form.dietary_notes.data
@@ -65,7 +68,12 @@ def details(token):
             plus_one.dietary_notes = notes
         guest.rsvp_updated_at = utcnow()
         db.session.add(GuestEventLog(guest_id=guest.id, event_type="updated"))
+        is_first_completion = guest.recap_sent_at is None
+        if is_first_completion and guest.email:
+            guest.recap_sent_at = utcnow()
         db.session.commit()
+        if is_first_completion and guest.email:
+            send_recap_email(guest)
         return redirect(url_for("guest.thank_you", token=token))
 
     return render_template("guest/details.html", guest=guest, form=form, options=options)

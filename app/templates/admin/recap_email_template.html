@@ -1,15 +1,16 @@
 {% extends "base.html" %}
 {% from "admin/_shell.html" import sidebar %}
-{% block title %}Modèle d'e-mail — {{ site_title }}{% endblock %}
+{% block title %}Modèle d'e-mail récapitulatif — {{ site_title }}{% endblock %}
 {% block body_class %}admin{% endblock %}
 {% block content %}
 <div class="admin-shell">
-  {{ sidebar("email_template") }}
+  {{ sidebar("recap_email_template") }}
   <main class="admin-main">
     <div class="admin-header">
-      <h1>Modèle d'e-mail d'invitation</h1>
+      <h1>Modèle d'e-mail récapitulatif</h1>
     </div>
 
+    <p>Envoyé automatiquement la première fois qu'un·e invité·e complète ses informations (dates, accompagnant·e·s, allergies).</p>
     <p>Variables disponibles — elles seront remplacées automatiquement à l'envoi :</p>
     <table class="admin-table" style="max-width:40rem; margin-bottom:1.5rem;">
       <thead>
@@ -39,11 +40,11 @@
       <button type="submit" name="action" value="save" class="btn-sm btn-sm--primary">Enregistrer</button>
 
       <h2 style="margin-top:2.5rem;">Aperçu</h2>
-      <p style="color:var(--stone-dark); font-size:0.9rem;">Avec des exemples de valeurs ({{ '{prenom}' }} → Jeanne, {{ '{nom}' }} → Dupont).</p>
+      <p style="color:var(--stone-dark); font-size:0.9rem;">Avec des exemples de valeurs.</p>
       <div style="border:1px solid var(--stone); border-radius:0.75rem; padding:1.5rem; background:var(--white);">
         <p style="margin:0 0 1rem; font-weight:600;">Objet : {{ preview_subject }}</p>
         <div>{{ preview_body }}</div>
-        <p style="margin:1rem 0 0; padding-top:1rem; border-top:1px solid var(--stone); color:var(--stone-dark); font-size:0.85rem;">Bouton « Confirmer ma présence »</p>
+        <p style="margin:1rem 0 0; padding-top:1rem; border-top:1px solid var(--stone); color:var(--stone-dark); font-size:0.85rem;">Bouton « Modifier ma réponse »</p>
         {% if preview_signature %}
         <div style="margin-top:0.5rem;">{{ preview_signature }}</div>
         {% endif %}

@@ -38,3 +38,37 @@ def test_add_and_remove_plus_one(client, guest, app):
 def test_details_requires_confirmation(client, guest):
     response = client.get(f"/rsvp/{guest.token}/details")
     assert response.status_code == 302
+
+
+def test_admin_reset_answer_clears_guest_state(admin_client, guest, app):
+    from app.extensions import db
+    from app.models import EventOption, Guest, PlusOne, utcnow
+
+    option = EventOption(starts_at=utcnow())
+    db.session.add(option)
+    db.session.commit()
+
+    admin_client.post(f"/rsvp/{guest.token}/confirmer")
+    admin_client.post(
+        f"/rsvp/{guest.token}/details",
+        data={"dietary_notes": "Sans sel", "event_option_ids": [option.id]},
+    )
+    db.session.add(PlusOne(guest_id=guest.id, dietary_notes="Sans gluten"))
+    db.session.commit()
+
+    response = admin_client.post(f"/admin/guests/{guest.id}/reset-answer")
+    assert response.status_code == 302
+
+    refreshed = Guest.query.get(guest.id)
+    assert refreshed.rsvp_status == "pending"
+    assert refreshed.rsvp_updated_at is None
+    assert refreshed.dietary_notes is None
+    assert refreshed.event_options == []
+    assert refreshed.plus_ones == []
+    assert refreshed.recap_sent_at is None
+
+
+def test_reset_answer_route_requires_login(client, guest):
+    response = client.post(f"/admin/guests/{guest.id}/reset-answer")
+    assert response.status_code == 302
+    assert "/admin/login" in response.location

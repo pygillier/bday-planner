@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}80 ans — vos informations{% endblock %}
+{% block title %}{{ site_title }} — vos informations{% endblock %}
 {% block body_class %}guest{% endblock %}
 {% block content %}
 <div class="card">
@@ -24,16 +24,15 @@
     </div>
     {% endif %}
 
-    <div class="field">
-      {{ form.dietary_notes.label }}
-      {{ form.dietary_notes(placeholder="Allergies, régime particulier, autre chose à savoir...") }}
-    </div>
+    <div class="plus-one-section">
+      <h2 class="plus-one-section__title">Vous venez accompagné(e) ?</h2>
+      <p class="plus-one-section__hint">Ajoutez chaque personne qui vous accompagnera, pour que nous sachions combien nous serons à table.</p>
 
-    {% if guest.plus_ones %}
       {% for plus_one in guest.plus_ones %}
         <div class="plus-one">
           <div class="plus-one__header">
             <span>Accompagnant {{ loop.index }}</span>
+            <button type="submit" formaction="{{ url_for('guest.remove_plus_one', token=guest.token, plus_one_id=plus_one.id) }}" formnovalidate class="plus-one__remove">Retirer</button>
           </div>
           <div class="field">
             <label>Allergies / informations</label>
@@ -41,21 +40,16 @@
           </div>
         </div>
       {% endfor %}
-    {% endif %}
+
+      <button type="submit" formaction="{{ url_for('guest.add_plus_one', token=guest.token) }}" formnovalidate class="add-plus-one">+ Ajouter {{ "un" if not guest.plus_ones else "un autre" }} accompagnant</button>
+    </div>
+
+    <div class="field">
+      {{ form.dietary_notes.label }}
+      {{ form.dietary_notes(placeholder="Allergies, régime particulier, autre chose à savoir...") }}
+    </div>
 
     <button type="submit" class="btn btn-primary">Enregistrer</button>
-  </form>
-
-  {% for plus_one in guest.plus_ones %}
-    <form method="post" action="{{ url_for('guest.remove_plus_one', token=guest.token, plus_one_id=plus_one.id) }}">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <button type="submit" class="btn-ghost">Retirer l'accompagnant {{ loop.index }}</button>
-    </form>
-  {% endfor %}
-
-  <form method="post" action="{{ url_for('guest.add_plus_one', token=guest.token) }}">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <button type="submit" class="add-plus-one">+ Ajouter un accompagnant</button>
   </form>
 
   <a class="btn-ghost" href="{{ url_for('guest.landing', token=guest.token) }}">← Retour</a>

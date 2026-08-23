@@ -8,6 +8,8 @@ class Config:
 
     LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
 
+    SITE_TITLE = os.environ.get("SITE_TITLE", "80 ans")
+
     RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
     RESEND_FROM_EMAIL = os.environ.get("RESEND_FROM_EMAIL")
 
@@ -26,6 +28,7 @@ class TestConfig:
     TESTING = True
     LOG_LEVEL = "WARNING"
     SECRET_KEY = "test-secret-key"
+    SITE_TITLE = "80 ans"
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     WTF_CSRF_ENABLED = False

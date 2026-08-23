@@ -4,7 +4,7 @@ from loguru import logger
 from markupsafe import Markup, escape
 
 from app.extensions import db
-from app.models import EmailTemplate, InvitationLog
+from app.models import EmailTemplate, InvitationLog, RecapEmailTemplate
 
 
 def render_invitation_subject(subject_template, context):
@@ -46,6 +46,45 @@ def preview_context():
     }
 
 
+def recap_preview_context():
+    """Sample placeholder values for the admin recap-template edit page's
+    live preview and test-send emails."""
+    return {
+        "prenom": "Jeanne",
+        "nom": "Dupont",
+        "dates": "samedi 12 septembre 2026 à 18h",
+        "accompagnants": "Accompagnant 1 : sans porc",
+        "allergies": "Allergie aux fruits à coque",
+        "lien": url_for("guest.details", token="exemple-de-lien", _external=True),
+    }
+
+
+def guest_recap_context(guest):
+    """Placeholder values for a real guest's recap e-mail, built from their
+    submitted dates, plus-ones, and dietary notes."""
+    if guest.event_options:
+        dates = ", ".join(option.display_text for option in guest.event_options)
+    else:
+        dates = "Aucune date sélectionnée"
+
+    if guest.plus_ones:
+        accompagnants = "\n".join(
+            f"Accompagnant {index} : {plus_one.dietary_notes or 'aucune information'}"
+            for index, plus_one in enumerate(guest.plus_ones, start=1)
+        )
+    else:
+        accompagnants = "Aucun accompagnant"
+
+    return {
+        "prenom": guest.first_name,
+        "nom": guest.last_name,
+        "dates": dates,
+        "accompagnants": accompagnants,
+        "allergies": guest.dietary_notes or "Aucune",
+        "lien": url_for("guest.details", token=guest.token, _external=True),
+    }
+
+
 def send_test_email(to_email, subject_template, body_template, signature_template=""):
     """Send a preview of the invitation email to an arbitrary address, using
     sample placeholder values. Not tied to a guest -- no InvitationLog row,
@@ -71,6 +110,66 @@ def send_test_email(to_email, subject_template, body_template, signature_templat
         return True
     except Exception:  # noqa: BLE001 -- Resend SDK can raise several error types
         logger.exception("Failed to send test email to {}", to_email)
+        return False
+
+
+def send_test_recap_email(to_email, subject_template, body_template, signature_template=""):
+    """Send a preview of the recap email to an arbitrary address, using
+    sample placeholder values. Not tied to a guest. Returns True/False,
+    never raises."""
+    resend.api_key = current_app.config["RESEND_API_KEY"]
+    context = recap_preview_context()
+    subject = render_invitation_subject(subject_template, context)
+    body_html = render_invitation_body(body_template, context)
+    signature_html = render_invitation_body(signature_template, context)
+    html = render_template(
+        "emails/recap.html", edit_url=context["lien"], body_html=body_html, signature_html=signature_html
+    )
+
+    try:
+        resend.Emails.send(
+            {
+                "from": current_app.config["RESEND_FROM_EMAIL"],
+                "to": to_email,
+                "subject": f"[Test] {subject}",
+                "html": html,
+            }
+        )
+        return True
+    except Exception:  # noqa: BLE001 -- Resend SDK can raise several error types
+        logger.exception("Failed to send test recap email to {}", to_email)
+        return False
+
+
+def send_recap_email(guest):
+    """Send the recap email for a guest via Resend after they complete the
+    details form for the first time. Returns True on success, False on
+    failure (never raises)."""
+    resend.api_key = current_app.config["RESEND_API_KEY"]
+    context = guest_recap_context(guest)
+
+    template = RecapEmailTemplate.get_current()
+    subject = render_invitation_subject(template.subject, context)
+    body_html = render_invitation_body(template.body, context)
+    signature_html = render_invitation_body(template.signature, context)
+
+    html = render_template(
+        "emails/recap.html", edit_url=context["lien"], body_html=body_html, signature_html=signature_html
+    )
+
+    try:
+        resend.Emails.send(
+            {
+                "from": current_app.config["RESEND_FROM_EMAIL"],
+                "to": guest.email,
+                "subject": subject,
+                "html": html,
+            }
+        )
+        logger.info("Recap email sent to guest {} ({})", guest.id, guest.email)
+        return True
+    except Exception as exc:  # noqa: BLE001 -- Resend SDK can raise several error types
+        logger.exception("Failed to send recap email to guest {} ({}) - {}", guest.id, guest.email, exc)
         return False
 
 
