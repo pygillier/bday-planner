@@ -1,5 +1,5 @@
 def test_landing_shows_greeting(client, guest):
-    response = client.get(f"/rsvp/{guest.token}")
+    response = client.get(f"/rsvp/{guest.token}", follow_redirects=True)
     assert response.status_code == 200
     assert "Jeanne".encode() in response.data
 
@@ -11,7 +11,7 @@ def test_invalid_token_returns_404(client):
 
 def test_confirm_then_decline(client, guest):
     client.post(f"/rsvp/{guest.token}/confirmer")
-    response = client.get(f"/rsvp/{guest.token}")
+    response = client.get(f"/rsvp/{guest.token}", follow_redirects=True)
     assert "confirm".encode() in response.data.lower()
 
     client.post(f"/rsvp/{guest.token}/decliner")
@@ -35,7 +35,13 @@ def test_add_and_remove_plus_one(client, guest, app):
     assert len(refreshed.plus_ones) == 0
 
 
-def test_details_requires_confirmation(client, guest):
+def test_details_accessible_before_confirmation(client, guest):
+    response = client.get(f"/rsvp/{guest.token}/details")
+    assert response.status_code == 200
+
+
+def test_details_redirects_to_landing_when_declined(client, guest):
+    client.post(f"/rsvp/{guest.token}/decliner")
     response = client.get(f"/rsvp/{guest.token}/details")
     assert response.status_code == 302
 

@@ -22,7 +22,9 @@ def invalid_token(_error):
 @guest_bp.route("/<token>")
 def landing(token):
     guest = _get_guest_or_404(token)
-    return render_template("guest/landing.html", guest=guest)
+    if guest.rsvp_status == "declined":
+        return render_template("guest/landing.html", guest=guest)
+    return redirect(url_for("guest.details", token=token))
 
 
 @guest_bp.route("/<token>/confirmer", methods=["POST"])
@@ -48,9 +50,10 @@ def decline(token):
 @guest_bp.route("/<token>/details", methods=["GET", "POST"])
 def details(token):
     guest = _get_guest_or_404(token)
-    if guest.rsvp_status != "confirmed":
+    if guest.rsvp_status == "declined":
         return redirect(url_for("guest.landing", token=token))
 
+    was_pending = guest.rsvp_status != "confirmed"
     options = EventOption.query.order_by(EventOption.starts_at).all()
     form = DetailsForm(obj=guest)
     form.set_event_options(options)
@@ -66,8 +69,13 @@ def details(token):
             guest.plus_ones, request.form.getlist("plus_one_notes")
         ):
             plus_one.dietary_notes = notes
+        guest.rsvp_status = "confirmed"
         guest.rsvp_updated_at = utcnow()
-        db.session.add(GuestEventLog(guest_id=guest.id, event_type="updated"))
+        db.session.add(
+            GuestEventLog(
+                guest_id=guest.id, event_type="confirmed" if was_pending else "updated"
+            )
+        )
         is_first_completion = guest.recap_sent_at is None
         if is_first_completion and guest.email:
             guest.recap_sent_at = utcnow()

@@ -199,6 +199,22 @@ body.guest {
   flex-shrink: 0;
 }
 
+.radio-option--decline {
+  justify-content: center;
+  border-style: dashed;
+  border-color: var(--stone);
+  color: var(--stone-dark);
+  font-weight: 500;
+  background: transparent;
+  width: 100%;
+  font-size: 1rem;
+  font-family: inherit;
+}
+.radio-option--decline:hover, .radio-option--decline:focus-visible {
+  border-color: var(--stone-dark);
+  color: var(--ink);
+}
+
 .plus-one-section {
   text-align: left;
   border: 2px solid var(--bordeaux);
