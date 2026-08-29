@@ -360,6 +360,9 @@ table.admin-table {
   border-bottom: 1px solid var(--admin-bg);
 }
 .admin-table th { background: var(--admin-bg); font-weight: 600; }
+.contact-check { text-align: center; font-weight: 700; }
+.contact-check--yes { color: var(--success); }
+.contact-check--no { color: var(--stone); }
 
 .badge {
   display: inline-block;

@@ -56,6 +56,16 @@
       <button type="submit" formaction="{{ url_for('guest.add_plus_one', token=guest.token) }}" formnovalidate class="add-plus-one">+ Ajouter {{ "un" if not guest.plus_ones else "un autre" }} accompagnant</button>
     </div>
 
+    {% if not guest.email %}
+    <div class="field">
+      {{ form.email.label }}
+      {{ form.email(placeholder="votre@email.fr") }}
+      {% if form.email.errors %}
+        <p class="field-error">{{ form.email.errors[0] }}</p>
+      {% endif %}
+    </div>
+    {% endif %}
+
     <div class="field">
       {{ form.dietary_notes.label }}
       {{ form.dietary_notes(placeholder="Allergies, régime particulier, autre chose à savoir...") }}

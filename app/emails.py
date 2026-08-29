@@ -192,7 +192,7 @@ def send_invitation_email(guest):
         "emails/invitation.html", rsvp_url=rsvp_url, body_html=body_html, signature_html=signature_html
     )
 
-    log = InvitationLog(guest_id=guest.id)
+    log = InvitationLog(guest_id=guest.id, channel="email")
     try:
         response = resend.Emails.send(
             {
@@ -202,7 +202,7 @@ def send_invitation_email(guest):
                 "html": html,
             }
         )
-        log.resend_message_id = response.get("id") if isinstance(response, dict) else None
+        log.provider_message_id = response.get("id") if isinstance(response, dict) else None
         log.status = "sent"
         db.session.add(log)
         guest.invitation_sent_at = db.func.now()

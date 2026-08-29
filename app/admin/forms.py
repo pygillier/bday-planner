@@ -1,7 +1,9 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileField, FileRequired
 from wtforms import DateTimeLocalField, StringField, TextAreaField
-from wtforms.validators import DataRequired, Email, Length, Optional
+from wtforms.validators import DataRequired, Email, Length, Optional, ValidationError
+
+from app.phone import to_e164_fr
 
 
 class GuestForm(FlaskForm):
@@ -9,6 +11,10 @@ class GuestForm(FlaskForm):
     last_name = StringField("Nom", validators=[DataRequired(), Length(max=120)])
     email = StringField("E-mail", validators=[Optional(), Email(), Length(max=255)])
     phone = StringField("Téléphone", validators=[Optional(), Length(max=50)])
+
+    def validate_phone(self, field):
+        if field.data and to_e164_fr(field.data) is None:
+            raise ValidationError("Numéro français invalide (ex : 06 12 34 56 78).")
 
 
 class ImportForm(FlaskForm):
@@ -34,6 +40,16 @@ class EmailTemplateForm(FlaskForm):
     test_email = StringField(
         "Adresse de test", validators=[Optional(), Email(), Length(max=255)]
     )
+
+
+class SmsTemplateForm(FlaskForm):
+    body = TextAreaField("Message", validators=[DataRequired(), Length(max=1000)])
+    signature = TextAreaField("Signature (facultatif)", validators=[Optional(), Length(max=200)])
+    test_phone = StringField("Numéro de test", validators=[Optional(), Length(max=50)])
+
+    def validate_test_phone(self, field):
+        if field.data and to_e164_fr(field.data) is None:
+            raise ValidationError("Numéro français invalide (ex : 06 12 34 56 78).")
 
 
 class RecapEmailTemplateForm(FlaskForm):

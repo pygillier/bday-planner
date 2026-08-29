@@ -20,6 +20,7 @@ from app.admin.forms import (
     GuestForm,
     ImportForm,
     RecapEmailTemplateForm,
+    SmsTemplateForm,
 )
 from app.emails import (
     preview_context,
@@ -34,12 +35,15 @@ from app.extensions import db, oauth
 from app.models import (
     EMAIL_VARIABLES,
     RECAP_EMAIL_VARIABLES,
+    SMS_VARIABLES,
     EmailTemplate,
     EventOption,
     Guest,
     GuestEventLog,
     RecapEmailTemplate,
+    SmsTemplate,
 )
+from app.sms import render_sms_body, send_invitation_sms, send_test_sms, sms_preview_context
 
 PUBLIC_ENDPOINTS = {"admin.login", "admin.login_pocketid", "admin.auth_callback"}
 
@@ -176,25 +180,49 @@ def delete_guest(guest_id):
     return redirect(url_for("admin.guests_list"))
 
 
+def _send_invitation_all_channels(guest):
+    """Send the invitation via every channel the guest has contact info
+    for. Returns (attempted, sent) counts."""
+    attempted = 0
+    sent = 0
+    if guest.email:
+        attempted += 1
+        sent += send_invitation_email(guest)
+    if guest.phone:
+        attempted += 1
+        sent += send_invitation_sms(guest)
+    return attempted, sent
+
+
 @admin_bp.route("/guests/<int:guest_id>/send-invitation", methods=["POST"])
 def send_invitation(guest_id):
     guest = Guest.query.get_or_404(guest_id)
-    if not guest.email:
-        flash("Cet·te invité·e n'a pas d'adresse e-mail — transmettez le lien manuellement.", "error")
-    elif send_invitation_email(guest):
+    attempted, sent = _send_invitation_all_channels(guest)
+    if attempted == 0:
+        flash(
+            "Cet·te invité·e n'a ni adresse e-mail ni numéro de téléphone — transmettez le lien manuellement.",
+            "error",
+        )
+    elif sent == attempted:
         flash(f"Invitation envoyée à {guest.full_name}.", "success")
     else:
-        flash(f"Échec de l'envoi à {guest.full_name}.", "error")
+        flash(f"Échec partiel de l'envoi à {guest.full_name} ({sent}/{attempted}).", "error")
     return redirect(url_for("admin.guests_list"))
 
 
 @admin_bp.route("/guests/send-invitations", methods=["POST"])
 def send_invitations():
     guests = Guest.query.filter(
-        Guest.invitation_sent_at.is_(None), Guest.email.isnot(None)
+        Guest.invitation_sent_at.is_(None),
+        db.or_(Guest.email.isnot(None), Guest.phone.isnot(None)),
     ).all()
-    sent = sum(1 for guest in guests if send_invitation_email(guest))
-    failed = len(guests) - sent
+    attempted = 0
+    sent = 0
+    for guest in guests:
+        guest_attempted, guest_sent = _send_invitation_all_channels(guest)
+        attempted += guest_attempted
+        sent += guest_sent
+    failed = attempted - sent
     flash(f"{sent} invitation(s) envoyée(s), {failed} échec(s).", "success" if failed == 0 else "error")
     return redirect(url_for("admin.guests_list"))
 
@@ -218,7 +246,7 @@ def reset_answer(guest_id):
 @admin_bp.route("/guests/<int:guest_id>/regenerate-link", methods=["POST"])
 def regenerate_link(guest_id):
     guest = Guest.query.get_or_404(guest_id)
-    guest.token = secrets.token_urlsafe(32)
+    guest.token = secrets.token_urlsafe(6)
     guest.invitation_sent_at = None
     db.session.commit()
     flash("Lien régénéré — pensez à le retransmettre.", "success")
@@ -304,6 +332,43 @@ def recap_email_template():
         preview_subject=preview_subject,
         preview_body=preview_body,
         preview_signature=preview_signature,
+    )
+
+
+@admin_bp.route("/sms-template", methods=["GET", "POST"])
+def sms_template():
+    template = SmsTemplate.get_current()
+    form = SmsTemplateForm(obj=template)
+    action = request.form.get("action")
+
+    if form.validate_on_submit():
+        if action == "test":
+            if not form.test_phone.data:
+                flash("Indiquez un numéro de téléphone pour l'envoi de test.", "error")
+            elif send_test_sms(form.test_phone.data, form.body.data, form.signature.data):
+                flash(f"SMS de test envoyé à {form.test_phone.data}.", "success")
+            else:
+                flash("Échec de l'envoi du SMS de test.", "error")
+        else:
+            template.body = form.body.data
+            template.signature = form.signature.data or ""
+            db.session.commit()
+            flash("Modèle de SMS mis à jour.", "success")
+            return redirect(url_for("admin.sms_template"))
+
+    context = sms_preview_context()
+    preview_body = render_sms_body(form.body.data or template.body, context)
+    preview_signature = render_sms_body(
+        form.signature.data if form.signature.data is not None else template.signature, context
+    )
+
+    return render_template(
+        "admin/sms_template.html",
+        form=form,
+        variables=SMS_VARIABLES,
+        preview_body=preview_body,
+        preview_signature=preview_signature,
+        preview_context=context,
     )
 
 

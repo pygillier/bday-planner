@@ -64,17 +64,17 @@ def test_admin_cannot_delete_event_option_in_use(admin_client, app, guest):
 
 
 def test_guest_details_without_options_has_no_date_field(client, guest):
-    client.post(f"/rsvp/{guest.token}/confirmer")
-    response = client.get(f"/rsvp/{guest.token}/details")
+    client.post(f"/r/{guest.token}/confirmer")
+    response = client.get(f"/r/{guest.token}/details")
     assert response.status_code == 200
     assert b"event_option_ids" not in response.data
 
 
 def test_guest_must_choose_a_date_when_options_exist(client, guest, app):
     _make_option(label="Samedi")
-    client.post(f"/rsvp/{guest.token}/confirmer")
+    client.post(f"/r/{guest.token}/confirmer")
 
-    response = client.post(f"/rsvp/{guest.token}/details", data={"dietary_notes": ""})
+    response = client.post(f"/r/{guest.token}/details", data={"dietary_notes": ""})
     assert response.status_code == 200
     assert "Merci de choisir au moins une date".encode() in response.data
 
@@ -85,10 +85,10 @@ def test_guest_must_choose_a_date_when_options_exist(client, guest, app):
 def test_guest_can_choose_multiple_dates(client, guest, app):
     option_a = _make_option(label="Samedi", starts_at=datetime(2026, 9, 12, 15, 0))
     option_b = _make_option(label="Dimanche", starts_at=datetime(2026, 9, 13, 12, 0))
-    client.post(f"/rsvp/{guest.token}/confirmer")
+    client.post(f"/r/{guest.token}/confirmer")
 
     response = client.post(
-        f"/rsvp/{guest.token}/details",
+        f"/r/{guest.token}/details",
         data={
             "dietary_notes": "",
             "event_option_ids": [str(option_a.id), str(option_b.id)],

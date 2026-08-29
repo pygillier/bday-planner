@@ -21,7 +21,7 @@ class Guest(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     token = db.Column(
         db.String(43), unique=True, nullable=False, index=True,
-        default=lambda: secrets.token_urlsafe(32),
+        default=lambda: secrets.token_urlsafe(6),
     )
     first_name = db.Column(db.String(120), nullable=False)
     last_name = db.Column(db.String(120), nullable=False)
@@ -68,6 +68,18 @@ class Guest(db.Model):
             return 0
         return 1 + len(self.plus_ones)
 
+    INVITATION_CHANNEL_LABELS = {"email": "E-mail", "sms": "SMS"}
+
+    @property
+    def invitation_channel_labels(self):
+        """Display labels for the channels ('email', 'sms') the invitation
+        was successfully sent through, in the order they were first used."""
+        seen = []
+        for log in reversed(self.invitation_logs):
+            if log.status == "sent" and log.channel not in seen:
+                seen.append(log.channel)
+        return [self.INVITATION_CHANNEL_LABELS.get(channel, channel) for channel in seen]
+
 
 class PlusOne(db.Model):
     """An accompanying guest. No name is collected -- rows are identified by
@@ -82,14 +94,16 @@ class PlusOne(db.Model):
 
 
 class InvitationLog(db.Model):
-    """Audit trail of Resend sends, for troubleshooting delivery."""
+    """Audit trail of invitation sends (e-mail via Resend, SMS via Twilio),
+    for troubleshooting delivery."""
 
     __tablename__ = "invitation_logs"
 
     id = db.Column(db.Integer, primary_key=True)
     guest_id = db.Column(db.Integer, db.ForeignKey("guests.id"), nullable=False)
     sent_at = db.Column(db.DateTime, default=utcnow, nullable=False)
-    resend_message_id = db.Column(db.String(120), nullable=True)
+    channel = db.Column(db.String(10), nullable=False, default="email")
+    provider_message_id = db.Column(db.String(120), nullable=True)
     status = db.Column(db.String(20), nullable=False, default="sent")
     error_message = db.Column(db.Text, nullable=True)
 
@@ -187,6 +201,38 @@ class EmailTemplate(db.Model):
         template = db.session.get(cls, 1)
         if template is None:
             template = cls(id=1, subject=DEFAULT_EMAIL_SUBJECT, body=DEFAULT_EMAIL_BODY)
+            db.session.add(template)
+            db.session.commit()
+        return template
+
+
+SMS_VARIABLES = {
+    "prenom": "Prénom de l'invité·e",
+    "nom": "Nom de l'invité·e",
+    "lien": "Lien personnel de confirmation",
+}
+
+DEFAULT_SMS_BODY = "Bonjour {prenom}, vous êtes invité·e à fêter les 80 ans ! Confirmez votre présence : {lien}"
+
+
+class SmsTemplate(db.Model):
+    """Single editable template for the guest invitation SMS.
+
+    Same substitution model as EmailTemplate (plain string .replace(), no
+    Jinja) -- SMS is plain text so no HTML-escaping is needed either."""
+
+    __tablename__ = "sms_templates"
+
+    id = db.Column(db.Integer, primary_key=True)
+    body = db.Column(db.Text, nullable=False, default=DEFAULT_SMS_BODY)
+    signature = db.Column(db.Text, nullable=False, default="")
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow, nullable=False)
+
+    @classmethod
+    def get_current(cls):
+        template = db.session.get(cls, 1)
+        if template is None:
+            template = cls(id=1, body=DEFAULT_SMS_BODY)
             db.session.add(template)
             db.session.commit()
         return template
