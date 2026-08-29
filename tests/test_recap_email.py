@@ -53,7 +53,7 @@ def test_send_recap_email_uses_current_app_context(app, guest, monkeypatch):
     assert ok is True
     assert sent["to"] == guest.email
     assert "Jeanne" in sent["html"]
-    assert f"/rsvp/{guest.token}/details" in sent["html"]
+    assert f"/r/{guest.token}/details" in sent["html"]
 
 
 def test_send_recap_email_returns_false_on_failure(app, guest, monkeypatch):
@@ -76,14 +76,14 @@ def test_details_submission_sends_recap_email_once(client, guest, app, monkeypat
         "app.guest.routes.send_recap_email", lambda g: calls.append(g.id) or True
     )
 
-    client.post(f"/rsvp/{guest.token}/confirmer")
-    client.post(f"/rsvp/{guest.token}/details", data={"dietary_notes": "Sans sel"})
+    client.post(f"/r/{guest.token}/confirmer")
+    client.post(f"/r/{guest.token}/details", data={"dietary_notes": "Sans sel"})
     assert calls == [guest.id]
 
     refreshed = Guest.query.filter_by(token=guest.token).first()
     assert refreshed.recap_sent_at is not None
 
-    client.post(f"/rsvp/{guest.token}/details", data={"dietary_notes": "Sans sel, révisé"})
+    client.post(f"/r/{guest.token}/details", data={"dietary_notes": "Sans sel, révisé"})
     assert calls == [guest.id]
 
 
@@ -100,8 +100,8 @@ def test_details_submission_skips_recap_email_without_address(client, app, monke
         "app.guest.routes.send_recap_email", lambda g: calls.append(g.id) or True
     )
 
-    client.post(f"/rsvp/{guest.token}/confirmer")
-    client.post(f"/rsvp/{guest.token}/details", data={"dietary_notes": "Rien à signaler"})
+    client.post(f"/r/{guest.token}/confirmer")
+    client.post(f"/r/{guest.token}/details", data={"dietary_notes": "Rien à signaler"})
     assert calls == []
 
 

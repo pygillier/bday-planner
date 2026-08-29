@@ -23,6 +23,8 @@
         <tr>
           <th>Nom</th>
           <th>Statut</th>
+          <th>E-mail</th>
+          <th>Téléphone</th>
           <th>Dates disponibles</th>
           <th>Accompagnants</th>
           <th>Invitation envoyée</th>
@@ -34,9 +36,17 @@
         <tr>
           <td>{{ guest.full_name }}</td>
           <td><span class="badge badge--{{ guest.rsvp_status }}">{{ guest.rsvp_status }}</span></td>
+          <td class="contact-check {{ 'contact-check--yes' if guest.email else 'contact-check--no' }}" title="{{ guest.email or '' }}">{{ "✓" if guest.email else "✗" }}</td>
+          <td class="contact-check {{ 'contact-check--yes' if guest.phone else 'contact-check--no' }}" title="{{ guest.phone or '' }}">{{ "✓" if guest.phone else "✗" }}</td>
           <td>{{ guest.event_options|map(attribute="display_text")|join(", ") if guest.event_options else "—" }}</td>
           <td>{{ guest.plus_ones|length }}</td>
-          <td>{{ "Oui" if guest.invitation_sent_at else "Non" }}</td>
+          <td>
+            {% if guest.invitation_sent_at %}
+              {{ guest.invitation_channel_labels|join(" + ") if guest.invitation_channel_labels else "Oui" }}
+            {% else %}
+              Non
+            {% endif %}
+          </td>
           <td>
             <div class="split-dropdown">
               <a class="btn-sm btn-sm--primary split-dropdown__main" href="{{ url_for('admin.edit_guest', guest_id=guest.id) }}">Modifier</a>
@@ -44,13 +54,13 @@
               <div class="split-dropdown__menu">
                 <button type="button" class="split-dropdown__item btn-copy-link" data-link="{{ url_for('guest.landing', token=guest.token, _external=True) }}">Copier le lien</button>
                 <a class="split-dropdown__item" href="{{ url_for('admin.journal', guest_id=guest.id) }}">Voir le journal</a>
-                {% if guest.email %}
+                {% if guest.email or guest.phone %}
                 <form method="post" action="{{ url_for('admin.send_invitation', guest_id=guest.id) }}">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button type="submit" class="split-dropdown__item">Envoyer</button>
                 </form>
                 {% else %}
-                <span class="split-dropdown__item" title="{{ url_for('guest.landing', token=guest.token, _external=True) }}">Pas d'e-mail — lien : {{ guest.token[:8] }}…</span>
+                <span class="split-dropdown__item" title="{{ url_for('guest.landing', token=guest.token, _external=True) }}">Pas de contact — lien : {{ guest.token }}</span>
                 {% endif %}
                 <form method="post" action="{{ url_for('admin.regenerate_link', guest_id=guest.id) }}">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -71,7 +81,7 @@
           </td>
         </tr>
         {% else %}
-        <tr><td colspan="6">Aucun·e invité·e pour le moment.</td></tr>
+        <tr><td colspan="8">Aucun·e invité·e pour le moment.</td></tr>
         {% endfor %}
       </tbody>
     </table>

@@ -57,10 +57,14 @@ def details(token):
     options = EventOption.query.order_by(EventOption.starts_at).all()
     form = DetailsForm(obj=guest)
     form.set_event_options(options)
+    if not guest.email:
+        form.require_email()
     if request.method == "GET":
         form.event_option_ids.data = [option.id for option in guest.event_options]
 
     if form.validate_on_submit():
+        if not guest.email:
+            guest.email = form.email.data
         guest.dietary_notes = form.dietary_notes.data
         if options:
             selected_ids = set(form.event_option_ids.data)

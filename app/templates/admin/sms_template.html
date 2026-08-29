@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% from "admin/_shell.html" import sidebar %}
+{% block title %}Modèle SMS — {{ site_title }}{% endblock %}
+{% block body_class %}admin{% endblock %}
+{% block content %}
+<div class="admin-shell">
+  {{ sidebar("sms_template") }}
+  <main class="admin-main">
+    <div class="admin-header">
+      <h1>Modèle de SMS d'invitation</h1>
+    </div>
+
+    <p>Variables disponibles — elles seront remplacées automatiquement à l'envoi :</p>
+    <table class="admin-table" style="max-width:40rem; margin-bottom:1.5rem;">
+      <thead>
+        <tr><th>Variable</th><th>Signification</th></tr>
+      </thead>
+      <tbody>
+        {% for name, description in variables.items() %}
+        <tr><td><code>{{ '{' }}{{ name }}{{ '}' }}</code></td><td>{{ description }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <form method="post" style="max-width:34rem;">
+      {{ form.csrf_token }}
+      <div class="field">
+        {{ form.body.label }}
+        {{ form.body(rows=4) }}
+      </div>
+      <div class="field">
+        {{ form.signature.label }}
+        {{ form.signature(rows=2) }}
+      </div>
+      <button type="submit" name="action" value="save" class="btn-sm btn-sm--primary">Enregistrer</button>
+
+      <h2 style="margin-top:2.5rem;">Aperçu</h2>
+      <p style="color:var(--stone-dark); font-size:0.9rem;">Avec des exemples de valeurs ({{ '{prenom}' }} → Jeanne, {{ '{nom}' }} → Dupont).</p>
+      <div style="border:1px solid var(--stone); border-radius:0.75rem; padding:1.5rem; background:var(--white);">
+        <pre id="sms-preview-text" style="white-space:pre-wrap; font-family:inherit; margin:0;">{{ preview_body }}{% if preview_signature %}
+{{ preview_signature }}{% endif %}</pre>
+        <p id="sms-counter" style="margin:1rem 0 0; padding-top:1rem; border-top:1px solid var(--stone); color:var(--stone-dark); font-size:0.85rem;"></p>
+      </div>
+
+      <h2 style="margin-top:2.5rem;">Tester l'envoi</h2>
+      <p style="color:var(--stone-dark); font-size:0.9rem;">
+        Envoie un SMS réel avec le contenu ci-dessus (même non enregistré) à un numéro de votre choix, avec des exemples de valeurs.
+      </p>
+      <div style="display:flex; gap:0.5rem; align-items:flex-start;">
+        <div class="field" style="flex:1; margin-bottom:0;">
+          {{ form.test_phone(placeholder="06 12 34 56 78") }}
+        </div>
+        <button type="submit" name="action" value="test" class="btn-sm">Envoyer un test</button>
+      </div>
+    </form>
+  </main>
+</div>
+<script>
+  (function () {
+    var sample = {
+      prenom: "Jeanne",
+      nom: "Dupont",
+      lien: {{ preview_context.lien | tojson }}
+    };
+    var bodyField = document.getElementById("body");
+    var signatureField = document.getElementById("signature");
+    var previewEl = document.getElementById("sms-preview-text");
+    var counterEl = document.getElementById("sms-counter");
+
+    // GSM 03.38 basic character set -- everything else forces UCS-2 encoding,
+    // which halves the per-segment character budget.
+    var gsmBasic = "@£$¥èéùìòÇ\nØø\rÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ !\"#¤%&'()*+,-./0123456789:;<=>?¡ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÑÜ§¿abcdefghijklmnopqrstuvwxyzäöñüà";
+    var gsmExtended = "^{}\\[~]|€";
+
+    function substitute(template) {
+      return template
+        .split("{prenom}").join(sample.prenom)
+        .split("{nom}").join(sample.nom)
+        .split("{lien}").join(sample.lien);
+    }
+
+    function analyze(text) {
+      var isGsm = true;
+      var gsmLength = 0;
+      for (var i = 0; i < text.length; i++) {
+        var ch = text[i];
+        if (gsmBasic.indexOf(ch) !== -1) {
+          gsmLength += 1;
+        } else if (gsmExtended.indexOf(ch) !== -1) {
+          gsmLength += 2;
+        } else {
+          isGsm = false;
+        }
+      }
+      if (isGsm) {
+        var single = 160, multi = 153;
+        var segments = gsmLength === 0 ? 0 : (gsmLength <= single ? 1 : Math.ceil(gsmLength / multi));
+        return { length: gsmLength, segments: segments };
+      }
+      var single2 = 70, multi2 = 67;
+      var segments2 = text.length === 0 ? 0 : (text.length <= single2 ? 1 : Math.ceil(text.length / multi2));
+      return { length: text.length, segments: segments2 };
+    }
+
+    function update() {
+      var body = substitute(bodyField.value);
+      var signature = substitute(signatureField.value);
+      var text = signature ? body + "\n" + signature : body;
+
+      previewEl.textContent = text;
+
+      var stats = analyze(text);
+      counterEl.textContent = stats.length + " caractère" + (stats.length !== 1 ? "s" : "") +
+        " — " + stats.segments + " SMS" + (stats.segments !== 1 ? "" : "");
+    }
+
+    bodyField.addEventListener("input", update);
+    signatureField.addEventListener("input", update);
+    update();
+  })();
+</script>
+{% endblock %}

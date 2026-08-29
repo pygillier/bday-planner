@@ -62,7 +62,7 @@ def test_send_test_email_uses_current_app_context(app, monkeypatch):
     assert sent["to"] == "someone@example.com"
     assert sent["subject"] == "[Test] Objet Jeanne"
     assert "Bonjour Jeanne" in sent["html"]
-    assert "/rsvp/exemple-de-lien" in sent["html"]
+    assert "/r/exemple-de-lien" in sent["html"]
 
 
 def test_send_test_email_returns_false_on_failure(app, monkeypatch):

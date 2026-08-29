@@ -9,7 +9,7 @@ Built for a non-technical, largely elderly guest list: the guest-facing flow is 
 ## Features
 
 - **Guest RSVP**: confirm/decline, free-text dietary notes, add accompanying guests (no name needed, just their own dietary notes)
-- **Admin backend**: add/edit/remove guests (one by one or bulk CSV import), an editable invitation email template (with a live preview and test-send), send invitations (single or bulk) via [Resend](https://resend.com), dashboard with headcount stats, CSV export
+- **Admin backend**: add/edit/remove guests (one by one or bulk CSV import), editable invitation templates (e-mail via [Resend](https://resend.com), SMS via [Twilio](https://www.twilio.com), both with a live preview and test-send), send invitations (single or bulk, over whichever channel each guest has contact info for), dashboard with headcount stats, CSV export
 - **Admin login** via OIDC against a self-hosted [Pocket ID](https://github.com/pocket-id/pocket-id) instance (Authlib, authorization-code flow + PKCE) — no local passwords
 - French-only UI
 
@@ -31,6 +31,7 @@ Requires [Docker](https://docs.docker.com/get-docker/) and [Task](https://taskfi
    - `FLASK_SECRET_KEY` — any long random string (`python -c "import secrets; print(secrets.token_hex(32))"`)
    - `POSTGRES_*` / `DATABASE_URL` — can keep the defaults for local use
    - `RESEND_API_KEY` / `RESEND_FROM_EMAIL` — from your [Resend](https://resend.com) account, using a domain you've verified there
+   - `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` / `TWILIO_FROM_NUMBER` — from your [Twilio](https://www.twilio.com) account, for SMS invitations to guests with a phone number but no e-mail
    - `OIDC_ISSUER` / `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET` — from your Pocket ID instance; register `https://<your-domain>/admin/auth/callback` as the client's allowed redirect URI
 
 2. Start everything:

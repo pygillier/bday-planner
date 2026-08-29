@@ -13,6 +13,10 @@ class Config:
     RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
     RESEND_FROM_EMAIL = os.environ.get("RESEND_FROM_EMAIL")
 
+    TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID")
+    TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN")
+    TWILIO_FROM_NUMBER = os.environ.get("TWILIO_FROM_NUMBER")
+
     OIDC_ISSUER = os.environ.get("OIDC_ISSUER")
     OIDC_CLIENT_ID = os.environ.get("OIDC_CLIENT_ID")
     OIDC_CLIENT_SECRET = os.environ.get("OIDC_CLIENT_SECRET")
@@ -34,6 +38,9 @@ class TestConfig:
     WTF_CSRF_ENABLED = False
     RESEND_API_KEY = "test"
     RESEND_FROM_EMAIL = "Anniversaire 80 ans <test@example.com>"
+    TWILIO_ACCOUNT_SID = "test-sid"
+    TWILIO_AUTH_TOKEN = "test-token"
+    TWILIO_FROM_NUMBER = "+33600000000"
     OIDC_ISSUER = None
     OIDC_CLIENT_ID = None
     OIDC_CLIENT_SECRET = None
