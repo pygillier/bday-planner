@@ -28,7 +28,12 @@ def sms_preview_context():
 
 
 def _twilio_client():
-    return Client(current_app.config["TWILIO_ACCOUNT_SID"], current_app.config["TWILIO_AUTH_TOKEN"])
+    return Client(
+        current_app.config["TWILIO_ACCOUNT_SID"],
+        current_app.config["TWILIO_AUTH_TOKEN"],
+        region=current_app.config.get("TWILIO_REGION"),
+        edge=current_app.config.get("TWILIO_EDGE"),
+    )
 
 
 def send_test_sms(to_phone, body_template, signature_template=""):
@@ -47,6 +52,7 @@ def send_test_sms(to_phone, body_template, signature_template=""):
 
     try:
         _twilio_client().messages.create(to=e164, from_=current_app.config["TWILIO_FROM_NUMBER"], body=text)
+        logger.info("Test SMS sent to {}", to_phone)
         return True
     except TwilioException:
         logger.exception("Failed to send test SMS to {}", to_phone)
