@@ -28,9 +28,17 @@ def sms_preview_context():
 
 
 def _twilio_client():
+    api_key_sid = current_app.config.get("TWILIO_API_KEY_SID")
+    api_key_secret = current_app.config.get("TWILIO_API_KEY_SECRET")
+    if api_key_sid and api_key_secret:
+        username, password = api_key_sid, api_key_secret
+    else:
+        username, password = current_app.config["TWILIO_ACCOUNT_SID"], current_app.config["TWILIO_AUTH_TOKEN"]
+
     return Client(
-        current_app.config["TWILIO_ACCOUNT_SID"],
-        current_app.config["TWILIO_AUTH_TOKEN"],
+        username,
+        password,
+        account_sid=current_app.config["TWILIO_ACCOUNT_SID"],
         region=current_app.config.get("TWILIO_REGION"),
         edge=current_app.config.get("TWILIO_EDGE"),
     )

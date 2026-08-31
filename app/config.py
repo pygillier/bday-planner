@@ -15,6 +15,8 @@ class Config:
 
     TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID")
     TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN")
+    TWILIO_API_KEY_SID = os.environ.get("TWILIO_API_KEY_SID")
+    TWILIO_API_KEY_SECRET = os.environ.get("TWILIO_API_KEY_SECRET")
     TWILIO_FROM_NUMBER = os.environ.get("TWILIO_FROM_NUMBER")
     TWILIO_REGION = os.environ.get("TWILIO_REGION")
     TWILIO_EDGE = os.environ.get("TWILIO_EDGE")
@@ -42,6 +44,8 @@ class TestConfig:
     RESEND_FROM_EMAIL = "Anniversaire 80 ans <test@example.com>"
     TWILIO_ACCOUNT_SID = "test-sid"
     TWILIO_AUTH_TOKEN = "test-token"
+    TWILIO_API_KEY_SID = None
+    TWILIO_API_KEY_SECRET = None
     TWILIO_FROM_NUMBER = "+33600000000"
     TWILIO_REGION = None
     TWILIO_EDGE = None

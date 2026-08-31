@@ -93,6 +93,9 @@ class PlusOne(db.Model):
     created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
 
 
+INVITATION_CHANNEL_LABELS = {"email": "e-mail", "sms": "SMS"}
+
+
 class InvitationLog(db.Model):
     """Audit trail of invitation sends (e-mail via Resend, SMS via Twilio),
     for troubleshooting delivery."""
@@ -106,6 +109,13 @@ class InvitationLog(db.Model):
     provider_message_id = db.Column(db.String(120), nullable=True)
     status = db.Column(db.String(20), nullable=False, default="sent")
     error_message = db.Column(db.Text, nullable=True)
+
+    @property
+    def label(self):
+        channel_label = INVITATION_CHANNEL_LABELS.get(self.channel, self.channel)
+        if self.status == "sent":
+            return f"Invitation envoyée par {channel_label}"
+        return f"Échec de l'envoi de l'invitation par {channel_label}"
 
 
 GUEST_EVENT_LABELS = {

@@ -40,6 +40,7 @@ from app.models import (
     EventOption,
     Guest,
     GuestEventLog,
+    InvitationLog,
     RecapEmailTemplate,
     SmsTemplate,
 )
@@ -421,14 +422,22 @@ def delete_event_option(option_id):
 @admin_bp.route("/journal")
 def journal():
     guest_id = request.args.get("guest_id", type=int)
-    query = GuestEventLog.query.join(Guest).order_by(GuestEventLog.created_at.desc())
     guest = None
+
+    event_query = GuestEventLog.query.join(Guest)
+    invitation_query = InvitationLog.query.join(Guest)
     if guest_id is not None:
         guest = Guest.query.get_or_404(guest_id)
-        query = query.filter(GuestEventLog.guest_id == guest_id)
-    else:
-        query = query.limit(200)
-    entries = query.all()
+        event_query = event_query.filter(GuestEventLog.guest_id == guest_id)
+        invitation_query = invitation_query.filter(InvitationLog.guest_id == guest_id)
+
+    entries = [(e.guest, e.label, e.created_at) for e in event_query] + [
+        (i.guest, i.label, i.sent_at) for i in invitation_query
+    ]
+    entries.sort(key=lambda entry: entry[2], reverse=True)
+    if guest_id is None:
+        entries = entries[:200]
+
     return render_template("admin/journal.html", entries=entries, guest=guest)
 
 

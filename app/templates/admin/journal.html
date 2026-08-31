@@ -24,11 +24,11 @@
         </tr>
       </thead>
       <tbody>
-        {% for entry in entries %}
+        {% for guest_, label, created_at in entries %}
         <tr>
-          <td><a href="{{ url_for('admin.edit_guest', guest_id=entry.guest_id) }}">{{ entry.guest.full_name }}</a></td>
-          <td>{{ entry.label }}</td>
-          <td>{{ entry.created_at.strftime("%d/%m/%Y %Hh%M") }}</td>
+          <td><a href="{{ url_for('admin.edit_guest', guest_id=guest_.id) }}">{{ guest_.full_name }}</a></td>
+          <td>{{ label }}</td>
+          <td>{{ created_at.strftime("%d/%m/%Y %Hh%M") }}</td>
         </tr>
         {% else %}
         <tr><td colspan="3">Aucune action enregistrée pour le moment.</td></tr>
