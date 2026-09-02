@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% from "admin/_shell.html" import sidebar %}
+{% block title %}Message page invité·e — {{ site_title }}{% endblock %}
+{% block body_class %}admin{% endblock %}
+{% block content %}
+<div class="admin-shell">
+  {{ sidebar("details_message") }}
+  <main class="admin-main">
+    <div class="admin-header">
+      <h1>Message en haut de la page invité·e</h1>
+    </div>
+
+    <p>Affiché en haut de la page où l'invité·e confirme sa présence, avant le formulaire. Laissez vide pour n'afficher aucun message.</p>
+    <p>Variables disponibles — elles seront remplacées automatiquement par les informations de l'invité·e :</p>
+    <table class="admin-table" style="max-width:40rem; margin-bottom:1.5rem;">
+      <thead>
+        <tr><th>Variable</th><th>Signification</th></tr>
+      </thead>
+      <tbody>
+        {% for name, description in variables.items() %}
+        <tr><td><code>{{ '{' }}{{ name }}{{ '}' }}</code></td><td>{{ description }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <form method="post" style="max-width:34rem;">
+      {{ form.csrf_token }}
+      <div class="field">
+        {{ form.body.label }}
+        {{ form.body(rows=4) }}
+        {% if form.body.errors %}
+          <p class="field-error">{{ form.body.errors[0] }}</p>
+        {% endif %}
+      </div>
+      <button type="submit" class="btn-sm btn-sm--primary">Enregistrer</button>
+
+      <h2 style="margin-top:2.5rem;">Aperçu</h2>
+      <p style="color:var(--stone-dark); font-size:0.9rem;">Avec des exemples de valeurs ({{ '{prenom}' }} → Jeanne, {{ '{nom}' }} → Dupont).</p>
+      <div style="border:1px solid var(--stone); border-radius:0.75rem; padding:1.5rem; background:var(--white);">
+        {% if preview_body %}
+          {{ preview_body }}
+        {% else %}
+          <em style="color:var(--stone-dark);">Aucun message ne sera affiché.</em>
+        {% endif %}
+      </div>
+    </form>
+  </main>
+</div>
+{% endblock %}

@@ -1,10 +1,10 @@
 from flask import abort, redirect, render_template, request, url_for
 
-from app.emails import send_recap_email
+from app.emails import render_invitation_body, send_recap_email
 from app.extensions import db
 from app.guest import guest_bp
 from app.guest.forms import DetailsForm
-from app.models import EventOption, Guest, GuestEventLog, PlusOne, utcnow
+from app.models import DetailsPageMessage, EventOption, Guest, GuestEventLog, PlusOne, utcnow
 
 
 def _get_guest_or_404(token):
@@ -88,7 +88,15 @@ def details(token):
             send_recap_email(guest)
         return redirect(url_for("guest.thank_you", token=token))
 
-    return render_template("guest/details.html", guest=guest, form=form, options=options)
+    message_template = DetailsPageMessage.get_current()
+    page_message = render_invitation_body(
+        message_template.body,
+        {"prenom": guest.first_name, "nom": guest.last_name},
+    )
+
+    return render_template(
+        "guest/details.html", guest=guest, form=form, options=options, page_message=page_message
+    )
 
 
 @guest_bp.route("/<token>/details/plus-one/add", methods=["POST"])

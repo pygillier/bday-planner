@@ -52,6 +52,13 @@ class SmsTemplateForm(FlaskForm):
             raise ValidationError("Numéro français invalide (ex : 06 12 34 56 78).")
 
 
+class DetailsPageMessageForm(FlaskForm):
+    body = TextAreaField(
+        "Message (facultatif, affiché en haut de la page)",
+        validators=[Optional(), Length(max=2000)],
+    )
+
+
 class RecapEmailTemplateForm(FlaskForm):
     subject = StringField("Objet de l'e-mail", validators=[DataRequired(), Length(max=255)])
     body = TextAreaField("Message", validators=[DataRequired(), Length(max=5000)])

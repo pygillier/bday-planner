@@ -111,6 +111,16 @@ body.guest {
 .status-pill--confirmed { background: var(--success); color: var(--white); }
 .status-pill--declined { background: var(--stone-dark); color: var(--white); }
 
+.page-message {
+  text-align: left;
+  background: var(--stone);
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+.page-message p { margin: 0 0 0.75rem; }
+.page-message p:last-child { margin-bottom: 0; }
+
 .btn {
   display: block;
   width: 100%;

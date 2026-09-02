@@ -10,6 +10,10 @@
     <h1 class="headline">Bonjour {{ guest.first_name }}, serez-vous des nôtres ?</h1>
   {% endif %}
 
+  {% if page_message %}
+    <div class="page-message">{{ page_message }}</div>
+  {% endif %}
+
   <form method="post" action="{{ url_for('guest.details', token=guest.token) }}">
     {{ form.csrf_token }}
 

@@ -15,6 +15,7 @@ from flask import (
 from app.admin import admin_bp
 from app.admin.csv_import import import_guests_from_csv
 from app.admin.forms import (
+    DetailsPageMessageForm,
     EmailTemplateForm,
     EventOptionForm,
     GuestForm,
@@ -33,9 +34,11 @@ from app.emails import (
 )
 from app.extensions import db, oauth
 from app.models import (
+    DETAILS_MESSAGE_VARIABLES,
     EMAIL_VARIABLES,
     RECAP_EMAIL_VARIABLES,
     SMS_VARIABLES,
+    DetailsPageMessage,
     EmailTemplate,
     EventOption,
     Guest,
@@ -370,6 +373,28 @@ def sms_template():
         preview_body=preview_body,
         preview_signature=preview_signature,
         preview_context=context,
+    )
+
+
+@admin_bp.route("/details-message", methods=["GET", "POST"])
+def details_message():
+    message = DetailsPageMessage.get_current()
+    form = DetailsPageMessageForm(obj=message)
+
+    if form.validate_on_submit():
+        message.body = form.body.data or ""
+        db.session.commit()
+        flash("Message mis à jour.", "success")
+        return redirect(url_for("admin.details_message"))
+
+    context = preview_context()
+    preview_body = render_invitation_body(form.body.data or message.body, context)
+
+    return render_template(
+        "admin/details_message.html",
+        form=form,
+        variables=DETAILS_MESSAGE_VARIABLES,
+        preview_body=preview_body,
     )
 
 

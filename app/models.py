@@ -270,6 +270,37 @@ DEFAULT_RECAP_EMAIL_BODY = (
 )
 
 
+DETAILS_MESSAGE_VARIABLES = {
+    "prenom": "Prénom de l'invité·e",
+    "nom": "Nom de l'invité·e",
+}
+
+DEFAULT_DETAILS_MESSAGE_BODY = ""
+
+
+class DetailsPageMessage(db.Model):
+    """Single editable message shown at the top of the guest details page
+    (above the RSVP form). Same substitution model as EmailTemplate -- plain
+    string .replace() + HTML-escaping, never Jinja -- for the same reason
+    (see EmailTemplate's docstring). Empty by default, in which case nothing
+    is shown."""
+
+    __tablename__ = "details_page_messages"
+
+    id = db.Column(db.Integer, primary_key=True)
+    body = db.Column(db.Text, nullable=False, default=DEFAULT_DETAILS_MESSAGE_BODY)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow, nullable=False)
+
+    @classmethod
+    def get_current(cls):
+        message = db.session.get(cls, 1)
+        if message is None:
+            message = cls(id=1, body=DEFAULT_DETAILS_MESSAGE_BODY)
+            db.session.add(message)
+            db.session.commit()
+        return message
+
+
 class RecapEmailTemplate(db.Model):
     """Single editable template for the recap e-mail sent to a guest the
     first time they complete the details form (dates, plus-ones, dietary
