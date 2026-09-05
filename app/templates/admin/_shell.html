@@ -1,4 +1,10 @@
 {% macro sidebar(active) %}
+<input type="checkbox" id="admin-nav-toggle" class="admin-nav-toggle" hidden>
+<div class="admin-topbar">
+  <label for="admin-nav-toggle" class="admin-topbar__burger" aria-label="Ouvrir le menu">&#9776;</label>
+  <div class="admin-topbar__title">{{ site_title }}</div>
+</div>
+<label for="admin-nav-toggle" class="admin-nav-overlay" aria-hidden="true"></label>
 <aside class="admin-sidebar">
   <div class="admin-sidebar__brand">{{ site_title }}</div>
   <nav>

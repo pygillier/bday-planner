@@ -326,6 +326,10 @@ body.admin {
   font-weight: 600;
 }
 
+.admin-topbar, .admin-nav-overlay {
+  display: none;
+}
+
 .admin-main {
   padding: 2rem 2.5rem;
 }
@@ -472,8 +476,58 @@ table.admin-table {
 
 @media (max-width: 720px) {
   .admin-shell { grid-template-columns: 1fr; }
-  .admin-sidebar { border-right: none; border-bottom: 1px solid var(--stone); padding: 1rem 1.25rem; }
-  .admin-sidebar nav { display: flex; gap: 0.5rem; overflow-x: auto; }
+
+  .admin-topbar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    background: var(--white);
+    border-bottom: 1px solid var(--stone);
+    position: sticky;
+    top: 0;
+    z-index: 30;
+  }
+  .admin-topbar__burger {
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .admin-topbar__title {
+    font-weight: 700;
+  }
+
+  .admin-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 80%;
+    max-width: 18rem;
+    box-sizing: border-box;
+    overflow-y: auto;
+    border-right: 1px solid var(--stone);
+    border-bottom: none;
+    padding: 1.5rem;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    z-index: 40;
+  }
+  .admin-nav-toggle:checked ~ .admin-sidebar {
+    transform: translateX(0);
+  }
+  .admin-sidebar nav { display: block; overflow-x: visible; }
+
+  .admin-nav-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 35;
+  }
+  .admin-nav-toggle:checked ~ .admin-nav-overlay {
+    display: block;
+  }
+
   .admin-main { padding: 1.25rem; }
   table.admin-table { display: block; overflow-x: auto; }
 }
