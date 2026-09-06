@@ -338,7 +338,15 @@ body.admin {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
   margin-bottom: 2rem;
+}
+
+.inline-test-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
 }
 
 .stats-row {
@@ -439,6 +447,7 @@ table.admin-table {
   z-index: 20;
   margin-top: 0.25rem;
   min-width: 12rem;
+  max-width: calc(100vw - 2rem);
   background: var(--white);
   border: 1px solid var(--stone);
   border-radius: 0.4rem;
@@ -472,9 +481,20 @@ table.admin-table {
   justify-content: center;
   flex-direction: column;
   gap: 1.5rem;
+  padding: 1.5rem;
+  text-align: center;
 }
 
-@media (max-width: 720px) {
+/* ---------- Tablet: persistent but narrower sidebar, scrollable tables ---------- */
+@media (max-width: 1024px) {
+  .admin-shell { grid-template-columns: 12rem 1fr; }
+  .admin-sidebar { padding: 1.5rem 1.25rem; }
+  .admin-main { padding: 1.5rem; }
+  table.admin-table { display: block; overflow-x: auto; }
+}
+
+/* ---------- Phone: off-canvas nav, stacked headers, card-style tables ---------- */
+@media (max-width: 640px) {
   .admin-shell { grid-template-columns: 1fr; }
 
   .admin-topbar {
@@ -530,4 +550,56 @@ table.admin-table {
 
   .admin-main { padding: 1.25rem; }
   table.admin-table { display: block; overflow-x: auto; }
+
+  .admin-header { flex-direction: column; align-items: flex-start; }
+  .admin-header .actions-row { width: 100%; }
+  .admin-header .actions-row > * { flex: 1 1 auto; }
+
+  .btn-sm {
+    min-height: 2.5rem;
+    padding: 0.55rem 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .inline-test-row { flex-direction: column; align-items: stretch; }
+
+  /* Responsive data tables: table -> stacked cards */
+  .admin-table--cards thead { display: none; }
+  .admin-table--cards,
+  .admin-table--cards tbody,
+  .admin-table--cards tr,
+  .admin-table--cards td {
+    display: block;
+    width: 100%;
+  }
+  .admin-table--cards tr {
+    margin-bottom: 1rem;
+    border: 1px solid var(--stone);
+    border-radius: 0.75rem;
+    overflow: hidden;
+  }
+  .admin-table--cards tr:last-child { margin-bottom: 0; }
+  .admin-table--cards td {
+    border-bottom: 1px solid var(--admin-bg);
+    padding: 0.6rem 1rem;
+  }
+  .admin-table--cards td:last-child { border-bottom: none; }
+  .admin-table--cards td:first-child {
+    font-weight: 700;
+    font-size: 1.05rem;
+    padding-bottom: 0.4rem;
+  }
+  .admin-table--cards td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--stone-dark);
+    margin-bottom: 0.2rem;
+  }
+  .admin-table--cards .actions-row { flex-direction: column; }
+  .admin-table--cards .split-dropdown { width: 100%; }
+  .admin-table--cards .split-dropdown__main { flex: 1; }
 }

@@ -18,7 +18,7 @@
       </div>
     </div>
 
-    <table class="admin-table">
+    <table class="admin-table admin-table--cards">
       <thead>
         <tr>
           <th>Nom</th>
@@ -35,12 +35,12 @@
         {% for guest in guests %}
         <tr>
           <td>{{ guest.full_name }}</td>
-          <td><span class="badge badge--{{ guest.rsvp_status }}">{{ guest.rsvp_status }}</span></td>
-          <td class="contact-check {{ 'contact-check--yes' if guest.email else 'contact-check--no' }}" title="{{ guest.email or '' }}">{{ "✓" if guest.email else "✗" }}</td>
-          <td class="contact-check {{ 'contact-check--yes' if guest.phone else 'contact-check--no' }}" title="{{ guest.phone or '' }}">{{ "✓" if guest.phone else "✗" }}</td>
-          <td>{{ guest.event_options|map(attribute="display_text")|join(", ") if guest.event_options else "—" }}</td>
-          <td>{{ guest.plus_ones|length }}</td>
-          <td>
+          <td data-label="Statut"><span class="badge badge--{{ guest.rsvp_status }}">{{ guest.rsvp_status }}</span></td>
+          <td data-label="E-mail" class="contact-check {{ 'contact-check--yes' if guest.email else 'contact-check--no' }}" title="{{ guest.email or '' }}">{{ "✓" if guest.email else "✗" }}</td>
+          <td data-label="Téléphone" class="contact-check {{ 'contact-check--yes' if guest.phone else 'contact-check--no' }}" title="{{ guest.phone or '' }}">{{ "✓" if guest.phone else "✗" }}</td>
+          <td data-label="Dates disponibles">{{ guest.event_options|map(attribute="display_text")|join(", ") if guest.event_options else "—" }}</td>
+          <td data-label="Accompagnants">{{ guest.plus_ones|length }}</td>
+          <td data-label="Invitation envoyée">
             {% if guest.invitation_sent_at %}
               {{ guest.invitation_channel_labels|join(" + ") if guest.invitation_channel_labels else "Oui" }}
             {% else %}
