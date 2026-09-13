@@ -4,7 +4,8 @@ from loguru import logger
 from markupsafe import Markup, escape
 
 from app.extensions import db
-from app.models import EmailTemplate, InvitationLog, RecapEmailTemplate
+from app.markdown_utils import render_follow_up_markdown
+from app.models import EmailTemplate, FollowUpLog, InvitationLog, RecapEmailTemplate, chosen_date_display
 
 
 def render_invitation_subject(subject_template, context):
@@ -42,6 +43,18 @@ def preview_context():
     return {
         "prenom": "Jeanne",
         "nom": "Dupont",
+        "lien": url_for("guest.landing", token="exemple-de-lien", _external=True),
+    }
+
+
+def follow_up_preview_context():
+    """Sample placeholder values used both for the follow-up compose page's
+    live preview and for test-send follow-up messages, which aren't tied to
+    a real guest. Includes the organizer-chosen date, unlike preview_context."""
+    return {
+        "prenom": "Jeanne",
+        "nom": "Dupont",
+        "date": chosen_date_display(),
         "lien": url_for("guest.landing", token="exemple-de-lien", _external=True),
     }
 
@@ -212,6 +225,72 @@ def send_invitation_email(guest):
         return True
     except Exception as exc:  # noqa: BLE001 -- Resend SDK can raise several error types
         logger.exception("Failed to send invitation email to guest {} ({}) - {}", guest.id, guest.email, exc)
+        log.status = "failed"
+        log.error_message = str(exc)
+        db.session.add(log)
+        db.session.commit()
+        return False
+
+
+def send_test_follow_up_email(to_email, subject_template, body_template):
+    """Send a preview of an ad-hoc follow-up email to an arbitrary address,
+    using sample placeholder values. Not tied to a guest -- no FollowUpLog
+    row. Returns True/False, never raises."""
+    resend.api_key = current_app.config["RESEND_API_KEY"]
+    context = follow_up_preview_context()
+    subject = render_invitation_subject(subject_template, context)
+    body_html = render_follow_up_markdown(body_template, context)
+    html = render_template("emails/follow_up.html", body_html=body_html)
+
+    try:
+        resend.Emails.send(
+            {
+                "from": current_app.config["RESEND_FROM_EMAIL"],
+                "to": to_email,
+                "subject": f"[Test] {subject}",
+                "html": html,
+            }
+        )
+        return True
+    except Exception:  # noqa: BLE001 -- Resend SDK can raise several error types
+        logger.exception("Failed to send test follow-up email to {}", to_email)
+        return False
+
+
+def send_follow_up_email(guest, subject_template, body_template):
+    """Send an ad-hoc follow-up email to a guest via Resend, logging the
+    outcome to FollowUpLog. Unlike send_invitation_email, this never touches
+    guest.invitation_sent_at/invitation_sent_count -- those are specifically
+    about the initial invitation. Returns True/False, never raises."""
+    resend.api_key = current_app.config["RESEND_API_KEY"]
+    context = {
+        "prenom": guest.first_name,
+        "nom": guest.last_name,
+        "date": chosen_date_display(),
+        "lien": url_for("guest.landing", token=guest.token, _external=True),
+    }
+    subject = render_invitation_subject(subject_template, context)
+    body_html = render_follow_up_markdown(body_template, context)
+    html = render_template("emails/follow_up.html", body_html=body_html)
+
+    log = FollowUpLog(guest_id=guest.id, channel="email", subject=subject, body=str(body_html))
+    try:
+        response = resend.Emails.send(
+            {
+                "from": current_app.config["RESEND_FROM_EMAIL"],
+                "to": guest.email,
+                "subject": subject,
+                "html": html,
+            }
+        )
+        log.provider_message_id = response.get("id") if isinstance(response, dict) else None
+        log.status = "sent"
+        db.session.add(log)
+        db.session.commit()
+        logger.info("Follow-up email sent to guest {} ({})", guest.id, guest.email)
+        return True
+    except Exception as exc:  # noqa: BLE001 -- Resend SDK can raise several error types
+        logger.exception("Failed to send follow-up email to guest {} ({}) - {}", guest.id, guest.email, exc)
         log.status = "failed"
         log.error_message = str(exc)
         db.session.add(log)

@@ -4,7 +4,8 @@ from twilio.base.exceptions import TwilioException
 from twilio.rest import Client
 
 from app.extensions import db
-from app.models import InvitationLog, SmsTemplate
+from app.markdown_utils import render_follow_up_sms_text
+from app.models import FollowUpLog, InvitationLog, SmsTemplate, chosen_date_display
 from app.phone import to_e164_fr
 
 
@@ -23,6 +24,18 @@ def sms_preview_context():
     return {
         "prenom": "Jeanne",
         "nom": "Dupont",
+        "lien": url_for("guest.landing", token="exemple", _external=True),
+    }
+
+
+def follow_up_sms_preview_context():
+    """Sample placeholder values for the follow-up compose page's live
+    preview and test-send SMS. Includes the organizer-chosen date, unlike
+    sms_preview_context."""
+    return {
+        "prenom": "Jeanne",
+        "nom": "Dupont",
+        "date": chosen_date_display(),
         "lien": url_for("guest.landing", token="exemple", _external=True),
     }
 
@@ -105,6 +118,69 @@ def send_invitation_sms(guest):
         return True
     except TwilioException as exc:
         logger.exception("Failed to send invitation SMS to guest {} ({}) - {}", guest.id, e164, exc)
+        log.status = "failed"
+        log.error_message = str(exc)
+        db.session.add(log)
+        db.session.commit()
+        return False
+
+
+def send_test_follow_up_sms(to_phone, body_template):
+    """Send a preview of an ad-hoc follow-up SMS to an arbitrary phone
+    number, using sample placeholder values. Not tied to a guest -- no
+    FollowUpLog row. Returns True/False, never raises."""
+    e164 = to_e164_fr(to_phone)
+    if e164 is None:
+        logger.warning("Refusing to send test follow-up SMS to invalid phone number {}", to_phone)
+        return False
+
+    context = follow_up_sms_preview_context()
+    text = f"[Test] {render_follow_up_sms_text(body_template, context)}"
+
+    try:
+        _twilio_client().messages.create(to=e164, from_=current_app.config["TWILIO_FROM_NUMBER"], body=text)
+        logger.info("Test follow-up SMS sent to {}", to_phone)
+        return True
+    except TwilioException:
+        logger.exception("Failed to send test follow-up SMS to {}", to_phone)
+        return False
+
+
+def send_follow_up_sms(guest, body_template):
+    """Send an ad-hoc follow-up SMS to a guest via Twilio, logging the
+    outcome to FollowUpLog. Unlike send_invitation_sms, this never touches
+    guest.invitation_sent_at/invitation_sent_count. Returns True/False,
+    never raises."""
+    log = FollowUpLog(guest_id=guest.id, channel="sms", body="")
+
+    e164 = to_e164_fr(guest.phone)
+    if e164 is None:
+        logger.warning("Cannot send follow-up SMS to guest {} - invalid phone {}", guest.id, guest.phone)
+        log.status = "failed"
+        log.error_message = "Numéro de téléphone invalide."
+        db.session.add(log)
+        db.session.commit()
+        return False
+
+    context = {
+        "prenom": guest.first_name,
+        "nom": guest.last_name,
+        "date": chosen_date_display(),
+        "lien": url_for("guest.landing", token=guest.token, _external=True),
+    }
+    text = render_follow_up_sms_text(body_template, context)
+    log.body = text
+
+    try:
+        message = _twilio_client().messages.create(to=e164, from_=current_app.config["TWILIO_FROM_NUMBER"], body=text)
+        log.provider_message_id = message.sid
+        log.status = "sent"
+        db.session.add(log)
+        db.session.commit()
+        logger.info("Follow-up SMS sent to guest {} ({})", guest.id, e164)
+        return True
+    except TwilioException as exc:
+        logger.exception("Failed to send follow-up SMS to guest {} ({}) - {}", guest.id, e164, exc)
         log.status = "failed"
         log.error_message = str(exc)
         db.session.add(log)

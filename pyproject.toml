@@ -16,6 +16,8 @@ dependencies = [
     "email-validator==2.2.0",
     "loguru==0.7.3",
     "twilio>=9.11.0",
+    "Markdown==3.7",
+    "bleach==6.2.0",
 ]
 
 [dependency-groups]

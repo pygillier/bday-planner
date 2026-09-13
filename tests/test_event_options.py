@@ -4,8 +4,10 @@ from app.extensions import db
 from app.models import EventOption, Guest
 
 
-def _make_option(label=None, starts_at=None):
-    option = EventOption(label=label, starts_at=starts_at or datetime(2026, 9, 12, 15, 0))
+def _make_option(label=None, starts_at=None, is_chosen=False):
+    option = EventOption(
+        label=label, starts_at=starts_at or datetime(2026, 9, 12, 15, 0), is_chosen=is_chosen
+    )
     db.session.add(option)
     db.session.commit()
     return option
@@ -125,3 +127,53 @@ def test_dashboard_hides_most_selected_date_when_nobody_available(admin_client, 
     response = admin_client.get("/admin/")
     assert response.status_code == 200
     assert "Date la plus plébiscitée".encode() not in response.data
+
+
+def test_dashboard_shows_chosen_date_instead_of_best_date(admin_client, app, guest):
+    option_a = _make_option(label="Samedi", starts_at=datetime(2026, 9, 12, 15, 0))
+    option_b = _make_option(label="Dimanche", starts_at=datetime(2026, 9, 13, 12, 0))
+    option_b.is_chosen = True
+
+    guest.rsvp_status = "confirmed"
+    guest.event_options = [option_a]
+    db.session.commit()
+
+    response = admin_client.get("/admin/")
+    assert response.status_code == 200
+    assert b"Date retenue" in response.data
+    assert "Date la plus plébiscitée".encode() not in response.data
+    assert option_b.display_text.encode() in response.data
+
+
+def test_admin_can_choose_event_option(admin_client, app):
+    option_a = _make_option(label="Samedi", starts_at=datetime(2026, 9, 12, 15, 0))
+    option_b = _make_option(label="Dimanche", starts_at=datetime(2026, 9, 13, 12, 0))
+
+    response = admin_client.post(f"/admin/dates/{option_a.id}/choose")
+    assert response.status_code == 302
+    assert db.session.get(EventOption, option_a.id).is_chosen is True
+    assert db.session.get(EventOption, option_b.id).is_chosen is False
+
+    response = admin_client.post(f"/admin/dates/{option_b.id}/choose")
+    assert response.status_code == 302
+    assert db.session.get(EventOption, option_a.id).is_chosen is False
+    assert db.session.get(EventOption, option_b.id).is_chosen is True
+
+
+def test_guests_list_disables_invitation_buttons_when_date_chosen(admin_client, app, guest):
+    _make_option(is_chosen=True)
+
+    response = admin_client.get("/admin/guests")
+    assert response.status_code == 200
+    assert b'name="csrf_token"' in response.data
+    assert b"<button type=\"submit\" class=\"btn-sm\" disabled" in response.data
+    assert response.data.count(b'class="split-dropdown__item" disabled') == 2
+
+
+def test_guests_list_keeps_invitation_buttons_enabled_without_chosen_date(admin_client, app, guest):
+    _make_option()
+
+    response = admin_client.get("/admin/guests")
+    assert response.status_code == 200
+    assert b"<button type=\"submit\" class=\"btn-sm\" disabled" not in response.data
+    assert b'class="split-dropdown__item" disabled' not in response.data

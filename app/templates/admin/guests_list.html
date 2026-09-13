@@ -13,7 +13,7 @@
         <a class="btn-sm" href="{{ url_for('admin.import_guests') }}">Importer (CSV)</a>
         <form method="post" action="{{ url_for('admin.send_invitations') }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button type="submit" class="btn-sm">Envoyer les invitations en attente</button>
+          <button type="submit" class="btn-sm" {{ "disabled" if date_chosen }} title="{{ 'Une date a été retenue — les invitations ne sont plus envoyées.' if date_chosen }}">Envoyer les invitations en attente</button>
         </form>
       </div>
     </div>
@@ -57,14 +57,14 @@
                 {% if guest.email or guest.phone %}
                 <form method="post" action="{{ url_for('admin.send_invitation', guest_id=guest.id) }}">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button type="submit" class="split-dropdown__item">Envoyer</button>
+                  <button type="submit" class="split-dropdown__item" {{ "disabled" if date_chosen }} title="{{ 'Une date a été retenue — les invitations ne sont plus envoyées.' if date_chosen }}">Envoyer</button>
                 </form>
                 {% else %}
                 <span class="split-dropdown__item" title="{{ url_for('guest.landing', token=guest.token, _external=True) }}">Pas de contact — lien : {{ guest.token }}</span>
                 {% endif %}
                 <form method="post" action="{{ url_for('admin.regenerate_link', guest_id=guest.id) }}">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button type="submit" class="split-dropdown__item">Régénérer le lien</button>
+                  <button type="submit" class="split-dropdown__item" {{ "disabled" if date_chosen }} title="{{ 'Une date a été retenue — le lien ne doit plus être régénéré.' if date_chosen }}">Régénérer le lien</button>
                 </form>
                 {% if guest.rsvp_status != "pending" %}
                 <form method="post" action="{{ url_for('admin.reset_answer', guest_id=guest.id) }}" onsubmit="return confirm('Réinitialiser la réponse de {{ guest.full_name }} ? Les dates, accompagnants et allergies seront effacés.');">

@@ -29,7 +29,13 @@
       </div>
     </div>
 
-    {% if best_date %}
+    {% if chosen_date %}
+    <div class="stat-tile stat-tile--chosen" style="margin-top:2.5rem; max-width:36rem;">
+      <div class="stat-tile__label">Date retenue</div>
+      <div class="stat-tile__value" style="font-size:1.5rem;">{{ chosen_date[0].display_text }}</div>
+      <div class="stat-tile__label">{{ chosen_date[1] }} disponible{{ "s" if chosen_date[1] > 1 else "" }} (avec accompagnants)</div>
+    </div>
+    {% elif best_date %}
     <div class="stat-tile stat-tile--highlight" style="margin-top:2.5rem; max-width:36rem;">
       <div class="stat-tile__label">Date la plus plébiscitée</div>
       <div class="stat-tile__value" style="font-size:1.5rem;">{{ best_date[0].display_text }}</div>

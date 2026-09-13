@@ -48,6 +48,9 @@ class Guest(db.Model):
     invitation_logs = db.relationship(
         "InvitationLog", backref="guest", cascade="all, delete-orphan", order_by="InvitationLog.sent_at.desc()"
     )
+    follow_up_logs = db.relationship(
+        "FollowUpLog", backref="guest", cascade="all, delete-orphan", order_by="FollowUpLog.sent_at.desc()"
+    )
     event_logs = db.relationship(
         "GuestEventLog", backref="guest", cascade="all, delete-orphan", order_by="GuestEventLog.created_at.desc()"
     )
@@ -118,6 +121,39 @@ class InvitationLog(db.Model):
         return f"Échec de l'envoi de l'invitation par {channel_label}"
 
 
+FOLLOW_UP_CHANNEL_LABELS = {"email": "e-mail", "sms": "SMS"}
+
+
+class FollowUpLog(db.Model):
+    """Audit trail of ad-hoc follow-up messages (composed fresh each time,
+    unlike the invitation/recap templates) sent to guests, for the journal.
+
+    Unlike InvitationLog, the actual rendered content is stored here --
+    subject and body -- because the compose text is never persisted as a
+    reusable template, so this row is the only surviving record of what was
+    sent to a given guest. `body` holds the content in its sent form: the
+    sanitized HTML for "email", the plain text for "sms"."""
+
+    __tablename__ = "follow_up_logs"
+
+    id = db.Column(db.Integer, primary_key=True)
+    guest_id = db.Column(db.Integer, db.ForeignKey("guests.id"), nullable=False)
+    sent_at = db.Column(db.DateTime, default=utcnow, nullable=False)
+    channel = db.Column(db.String(10), nullable=False)
+    status = db.Column(db.String(20), nullable=False, default="sent")
+    subject = db.Column(db.String(255), nullable=True)
+    body = db.Column(db.Text, nullable=False)
+    provider_message_id = db.Column(db.String(120), nullable=True)
+    error_message = db.Column(db.Text, nullable=True)
+
+    @property
+    def label(self):
+        channel_label = FOLLOW_UP_CHANNEL_LABELS.get(self.channel, self.channel)
+        verb = "Message de relance envoyé" if self.status == "sent" else "Échec de l'envoi du message de relance"
+        base = f"{verb} par {channel_label}"
+        return f"{base} : {self.subject}" if self.subject else base
+
+
 GUEST_EVENT_LABELS = {
     "confirmed": "A confirmé sa présence",
     "declined": "A décliné l'invitation",
@@ -166,6 +202,7 @@ class EventOption(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     label = db.Column(db.String(255), nullable=True)
     starts_at = db.Column(db.DateTime, nullable=False)
+    is_chosen = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
 
     @property
@@ -173,10 +210,29 @@ class EventOption(db.Model):
         formatted = format_date_fr(self.starts_at)
         return f"{self.label} — {formatted}" if self.label else formatted
 
+    @classmethod
+    def get_chosen(cls):
+        return cls.query.filter_by(is_chosen=True).first()
+
+
+def chosen_date_display():
+    """The organizer-selected final date, formatted for use as the {date}
+    placeholder in follow-up messages -- falls back to a neutral phrase
+    when no date has been chosen yet."""
+    option = EventOption.get_chosen()
+    return option.display_text if option else "Date à confirmer"
+
 
 EMAIL_VARIABLES = {
     "prenom": "Prénom de l'invité·e",
     "nom": "Nom de l'invité·e",
+    "lien": "Lien personnel de confirmation",
+}
+
+FOLLOW_UP_VARIABLES = {
+    "prenom": "Prénom de l'invité·e",
+    "nom": "Nom de l'invité·e",
+    "date": "Date retenue pour la fête",
     "lien": "Lien personnel de confirmation",
 }
 

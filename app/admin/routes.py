@@ -18,36 +18,50 @@ from app.admin.forms import (
     DetailsPageMessageForm,
     EmailTemplateForm,
     EventOptionForm,
+    FollowUpComposeForm,
     GuestForm,
     ImportForm,
     RecapEmailTemplateForm,
     SmsTemplateForm,
 )
 from app.emails import (
+    follow_up_preview_context,
     preview_context,
     recap_preview_context,
     render_invitation_body,
     render_invitation_subject,
+    send_follow_up_email,
     send_invitation_email,
     send_test_email,
+    send_test_follow_up_email,
     send_test_recap_email,
 )
 from app.extensions import db, oauth
+from app.markdown_utils import render_follow_up_markdown, render_follow_up_sms_text
 from app.models import (
     DETAILS_MESSAGE_VARIABLES,
     EMAIL_VARIABLES,
+    FOLLOW_UP_VARIABLES,
     RECAP_EMAIL_VARIABLES,
     SMS_VARIABLES,
     DetailsPageMessage,
     EmailTemplate,
     EventOption,
+    FollowUpLog,
     Guest,
     GuestEventLog,
     InvitationLog,
     RecapEmailTemplate,
     SmsTemplate,
 )
-from app.sms import render_sms_body, send_invitation_sms, send_test_sms, sms_preview_context
+from app.sms import (
+    render_sms_body,
+    send_follow_up_sms,
+    send_invitation_sms,
+    send_test_follow_up_sms,
+    send_test_sms,
+    sms_preview_context,
+)
 
 PUBLIC_ENDPOINTS = {"admin.login", "admin.login_pocketid", "admin.auth_callback"}
 
@@ -110,12 +124,19 @@ def dashboard():
         if top_headcount > 0:
             best_date = (top_option, top_headcount)
 
+    chosen_option = EventOption.get_chosen()
+    chosen_date = None
+    if chosen_option:
+        chosen_headcount = sum(g.headcount for g in guests if chosen_option in g.event_options)
+        chosen_date = (chosen_option, chosen_headcount)
+
     return render_template(
         "admin/dashboard.html",
         counts=counts,
         total_headcount=total_headcount,
         date_breakdown=date_breakdown,
         best_date=best_date,
+        chosen_date=chosen_date,
     )
 
 
@@ -126,7 +147,10 @@ def guests_list():
     if status_filter in {"pending", "confirmed", "declined"}:
         query = query.filter_by(rsvp_status=status_filter)
     guests = query.order_by(Guest.last_name, Guest.first_name).all()
-    return render_template("admin/guests_list.html", guests=guests, status_filter=status_filter)
+    date_chosen = EventOption.get_chosen() is not None
+    return render_template(
+        "admin/guests_list.html", guests=guests, status_filter=status_filter, date_chosen=date_chosen
+    )
 
 
 @admin_bp.route("/guests/new", methods=["GET", "POST"])
@@ -229,6 +253,92 @@ def send_invitations():
     failed = attempted - sent
     flash(f"{sent} invitation(s) envoyée(s), {failed} échec(s).", "success" if failed == 0 else "error")
     return redirect(url_for("admin.guests_list"))
+
+
+def _send_follow_up(guests, subject, body, channel_email, channel_sms):
+    """Send an ad-hoc follow-up message to each guest on whichever selected
+    channels they have contact info for. Returns (sent, failed) counts."""
+    sent = 0
+    failed = 0
+    for guest in guests:
+        if channel_email and guest.email:
+            if send_follow_up_email(guest, subject, body):
+                sent += 1
+            else:
+                failed += 1
+        if channel_sms and guest.phone:
+            if send_follow_up_sms(guest, body):
+                sent += 1
+            else:
+                failed += 1
+    return sent, failed
+
+
+@admin_bp.route("/follow-up", methods=["GET", "POST"])
+def follow_up():
+    status_filter = request.values.get("status_filter") or "pending"
+    if status_filter not in {"pending", "confirmed", "declined"}:
+        status_filter = "pending"
+
+    guests = Guest.query.filter_by(rsvp_status=status_filter).order_by(Guest.last_name, Guest.first_name).all()
+
+    form = FollowUpComposeForm()
+    if request.method == "GET":
+        form.status_filter.data = status_filter
+        form.guest_ids.data = [guest.id for guest in guests]
+    form.guest_ids.choices = [(guest.id, guest.full_name) for guest in guests]
+
+    action = request.form.get("action")
+
+    if form.validate_on_submit():
+        status_filter = form.status_filter.data
+        if action == "test":
+            if form.channel_email.data:
+                if not form.test_email.data:
+                    flash("Indiquez une adresse e-mail pour l'envoi de test.", "error")
+                elif send_test_follow_up_email(form.test_email.data, form.subject.data or "", form.body.data):
+                    flash(f"E-mail de test envoyé à {form.test_email.data}.", "success")
+                else:
+                    flash("Échec de l'envoi de l'e-mail de test.", "error")
+            if form.channel_sms.data:
+                if not form.test_phone.data:
+                    flash("Indiquez un numéro de téléphone pour l'envoi de test.", "error")
+                elif send_test_follow_up_sms(form.test_phone.data, form.body.data):
+                    flash(f"SMS de test envoyé à {form.test_phone.data}.", "success")
+                else:
+                    flash("Échec de l'envoi du SMS de test.", "error")
+        elif action == "send":
+            selected_ids = set(form.guest_ids.data or [])
+            target_guests = [guest for guest in guests if guest.id in selected_ids]
+            if not target_guests:
+                flash("Sélectionnez au moins un·e destinataire.", "error")
+            else:
+                sent, failed = _send_follow_up(
+                    target_guests, form.subject.data or "", form.body.data,
+                    form.channel_email.data, form.channel_sms.data,
+                )
+                flash(f"{sent} message(s) envoyé(s), {failed} échec(s).", "success" if failed == 0 else "error")
+                return redirect(url_for("admin.follow_up", status_filter=status_filter))
+    elif request.method == "POST":
+        for field_errors in form.errors.values():
+            for message in field_errors:
+                flash(message, "error")
+
+    context = follow_up_preview_context()
+    preview_subject = render_invitation_subject(form.subject.data, context) if form.subject.data else ""
+    preview_email_body = render_follow_up_markdown(form.body.data, context) if form.body.data else ""
+    preview_sms_body = render_follow_up_sms_text(form.body.data, context) if form.body.data else ""
+
+    return render_template(
+        "admin/follow_up.html",
+        form=form,
+        guests=guests,
+        status_filter=status_filter,
+        variables=FOLLOW_UP_VARIABLES,
+        preview_subject=preview_subject,
+        preview_email_body=preview_email_body,
+        preview_sms_body=preview_sms_body,
+    )
 
 
 @admin_bp.route("/guests/<int:guest_id>/reset-answer", methods=["POST"])
@@ -429,6 +539,16 @@ def edit_event_option(option_id):
     return render_template("admin/event_option_form.html", form=form, option=option)
 
 
+@admin_bp.route("/dates/<int:option_id>/choose", methods=["POST"])
+def choose_event_option(option_id):
+    option = EventOption.query.get_or_404(option_id)
+    EventOption.query.update({EventOption.is_chosen: False})
+    option.is_chosen = True
+    db.session.commit()
+    flash(f"« {option.display_text} » retenue comme date de la fête.", "success")
+    return redirect(url_for("admin.event_options_list"))
+
+
 @admin_bp.route("/dates/<int:option_id>/delete", methods=["POST"])
 def delete_event_option(option_id):
     option = EventOption.query.get_or_404(option_id)
@@ -451,14 +571,18 @@ def journal():
 
     event_query = GuestEventLog.query.join(Guest)
     invitation_query = InvitationLog.query.join(Guest)
+    follow_up_query = FollowUpLog.query.join(Guest)
     if guest_id is not None:
         guest = Guest.query.get_or_404(guest_id)
         event_query = event_query.filter(GuestEventLog.guest_id == guest_id)
         invitation_query = invitation_query.filter(InvitationLog.guest_id == guest_id)
+        follow_up_query = follow_up_query.filter(FollowUpLog.guest_id == guest_id)
 
-    entries = [(e.guest, e.label, e.created_at) for e in event_query] + [
-        (i.guest, i.label, i.sent_at) for i in invitation_query
-    ]
+    entries = (
+        [(e.guest, e.label, e.created_at) for e in event_query]
+        + [(i.guest, i.label, i.sent_at) for i in invitation_query]
+        + [(f.guest, f.label, f.sent_at) for f in follow_up_query]
+    )
     entries.sort(key=lambda entry: entry[2], reverse=True)
     if guest_id is None:
         entries = entries[:200]

@@ -15,6 +15,7 @@
 
     <p style="color:var(--stone-dark); font-size:0.9rem; max-width:36rem;">
       Les invité·e·s choisissent parmi ces dates en confirmant leur présence. S'il n'y en a qu'une seule (ou aucune), aucun choix ne leur est demandé.
+      La date « retenue » est celle finalement organisée : elle sert de valeur pour {{ '{date}' }} dans le module de message de relance.
     </p>
 
     <table class="admin-table admin-table--cards">
@@ -23,6 +24,7 @@
           <th>Date et heure</th>
           <th>Intitulé</th>
           <th>Invité·e·s ayant choisi cette date</th>
+          <th>Date retenue</th>
           <th>Actions</th>
         </tr>
       </thead>
@@ -32,6 +34,16 @@
           <td>{{ option.display_text }}</td>
           <td data-label="Intitulé">{{ option.label or "—" }}</td>
           <td data-label="Invité·e·s ayant choisi cette date">{{ option.guests|length }}</td>
+          <td data-label="Date retenue">
+            {% if option.is_chosen %}
+            <strong>✓ Retenue</strong>
+            {% else %}
+            <form method="post" action="{{ url_for('admin.choose_event_option', option_id=option.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn-sm">Choisir cette date</button>
+            </form>
+            {% endif %}
+          </td>
           <td>
             <div class="actions-row">
               <a class="btn-sm" href="{{ url_for('admin.edit_event_option', option_id=option.id) }}">Modifier</a>
@@ -43,7 +55,7 @@
           </td>
         </tr>
         {% else %}
-        <tr><td colspan="4">Aucune date configurée pour le moment.</td></tr>
+        <tr><td colspan="5">Aucune date configurée pour le moment.</td></tr>
         {% endfor %}
       </tbody>
     </table>

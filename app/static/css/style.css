@@ -368,6 +368,10 @@ body.admin {
   border-color: var(--bordeaux);
   background: rgba(122, 35, 49, 0.06);
 }
+.stat-tile--chosen {
+  border-color: var(--success);
+  background: rgba(63, 107, 74, 0.08);
+}
 
 table.admin-table {
   width: 100%;
@@ -411,6 +415,7 @@ table.admin-table {
   color: var(--ink);
 }
 .btn-sm--primary { background: var(--bordeaux); border-color: var(--bordeaux); color: var(--white); }
+.btn-sm:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .sr-only {
   position: absolute;
@@ -473,6 +478,8 @@ table.admin-table {
 }
 .split-dropdown__item:hover { background: var(--admin-bg); }
 .split-dropdown__item--danger { color: var(--bordeaux); }
+.split-dropdown__item:disabled { opacity: 0.5; cursor: not-allowed; }
+.split-dropdown__item:disabled:hover { background: none; }
 
 .admin-login {
   min-height: 100vh;
