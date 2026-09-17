@@ -68,7 +68,7 @@ tasks:
       - docker compose -f docker-compose.prod.yml up -d
 
   tag:
-    desc: 'Create and push a semver release tag -- usage: task tag -- major|minor|patch'
+    desc: 'Bump version, update prod compose image, commit, tag and push -- usage: task tag -- major|minor|patch'
     cmds:
       - |
         set -e
@@ -77,6 +77,10 @@ tasks:
           major|minor|patch) ;;
           *) echo "Usage: task tag -- major|minor|patch"; exit 1 ;;
         esac
+        branch=$(git rev-parse --abbrev-ref HEAD)
+        if [ "$branch" != "main" ]; then
+          echo "Must be run on main branch (currently on $branch), aborting"; exit 1
+        fi
         if [ -n "$(git status --porcelain)" ]; then
           echo "Working tree is not clean, aborting"; exit 1
         fi
@@ -94,8 +98,13 @@ tasks:
           minor) minor=$((minor + 1)); patch=0 ;;
           patch) patch=$((patch + 1)) ;;
         esac
-        newtag="v${major}.${minor}.${patch}"
-        echo "Tagging ${newtag} (previous: ${latest:-none})"
+        newversion="${major}.${minor}.${patch}"
+        newtag="v${newversion}"
+        echo "Bumping to ${newtag} (previous: ${latest:-none})"
+        sed -i.bak -E "s|(image: ghcr\.io/pygillier/bday-planner:)[0-9]+\.[0-9]+\.[0-9]+|\1${newversion}|; s|(image: ghcr\.io/pygillier/bday-planner:)[0-9]+\.[0-9]+|\1${newversion}|" docker-compose.prod.yml
+        rm -f docker-compose.prod.yml.bak
+        git add docker-compose.prod.yml
+        git commit -m "Bump to ${newtag}"
         git tag -a "$newtag" -m "$newtag"
-        git push --set-upstream origin "$newtag"
-        git push origin --tags
+        git push origin main
+        git push origin "$newtag"
