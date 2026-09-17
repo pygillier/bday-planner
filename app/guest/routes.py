@@ -70,15 +70,13 @@ def details(token):
             selected_ids = set(form.event_option_ids.data)
             guest.event_options = [option for option in options if option.id in selected_ids]
         for plus_one, notes in zip(
-            guest.plus_ones, request.form.getlist("plus_one_notes")
+            guest.plus_ones, request.form.getlist("plus_one_notes"), strict=False
         ):
             plus_one.dietary_notes = notes
         guest.rsvp_status = "confirmed"
         guest.rsvp_updated_at = utcnow()
         db.session.add(
-            GuestEventLog(
-                guest_id=guest.id, event_type="confirmed" if was_pending else "updated"
-            )
+            GuestEventLog(guest_id=guest.id, event_type="confirmed" if was_pending else "updated")
         )
         is_first_completion = guest.recap_sent_at is None
         if is_first_completion and guest.email:

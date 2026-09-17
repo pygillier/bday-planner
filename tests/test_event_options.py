@@ -78,7 +78,7 @@ def test_guest_must_choose_a_date_when_options_exist(client, guest, app):
 
     response = client.post(f"/r/{guest.token}/details", data={"dietary_notes": ""})
     assert response.status_code == 200
-    assert "Merci de choisir au moins une date".encode() in response.data
+    assert b"Merci de choisir au moins une date" in response.data
 
     refreshed = Guest.query.filter_by(token=guest.token).first()
     assert refreshed.event_options == []
@@ -166,7 +166,7 @@ def test_guests_list_disables_invitation_buttons_when_date_chosen(admin_client, 
     response = admin_client.get("/admin/guests")
     assert response.status_code == 200
     assert b'name="csrf_token"' in response.data
-    assert b"<button type=\"submit\" class=\"btn-sm\" disabled" in response.data
+    assert b'<button type="submit" class="btn-sm" disabled' in response.data
     assert response.data.count(b'class="split-dropdown__item" disabled') == 2
 
 
@@ -175,5 +175,5 @@ def test_guests_list_keeps_invitation_buttons_enabled_without_chosen_date(admin_
 
     response = admin_client.get("/admin/guests")
     assert response.status_code == 200
-    assert b"<button type=\"submit\" class=\"btn-sm\" disabled" not in response.data
+    assert b'<button type="submit" class="btn-sm" disabled' not in response.data
     assert b'class="split-dropdown__item" disabled' not in response.data

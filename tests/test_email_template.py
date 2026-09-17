@@ -17,7 +17,9 @@ def test_get_current_creates_default_singleton(app):
 
 
 def test_render_subject_substitutes_variables():
-    subject = render_invitation_subject("Coucou {prenom} {nom} !", {"prenom": "Jeanne", "nom": "Dupont"})
+    subject = render_invitation_subject(
+        "Coucou {prenom} {nom} !", {"prenom": "Jeanne", "nom": "Dupont"}
+    )
     assert subject == "Coucou Jeanne Dupont !"
 
 
@@ -28,9 +30,7 @@ def test_render_subject_strips_newlines_from_values():
 
 
 def test_render_body_escapes_html_in_template_and_values():
-    body = render_invitation_body(
-        "<script>alert(1)</script> {prenom}", {"prenom": "<b>Jeanne</b>"}
-    )
+    body = render_invitation_body("<script>alert(1)</script> {prenom}", {"prenom": "<b>Jeanne</b>"})
     assert "<script>" not in str(body)
     assert "&lt;script&gt;" in str(body)
     assert "<b>Jeanne</b>" not in str(body)
@@ -56,7 +56,9 @@ def test_send_test_email_uses_current_app_context(app, monkeypatch):
     monkeypatch.setattr("app.emails.resend.Emails.send", fake_send)
 
     with app.test_request_context():
-        ok = send_test_email("someone@example.com", "Objet {prenom}", "Bonjour {prenom}, lien : {lien}")
+        ok = send_test_email(
+            "someone@example.com", "Objet {prenom}", "Bonjour {prenom}, lien : {lien}"
+        )
 
     assert ok is True
     assert sent["to"] == "someone@example.com"

@@ -5,7 +5,13 @@ from markupsafe import Markup, escape
 
 from app.extensions import db
 from app.markdown_utils import render_follow_up_markdown
-from app.models import EmailTemplate, FollowUpLog, InvitationLog, RecapEmailTemplate, chosen_date_display
+from app.models import (
+    EmailTemplate,
+    FollowUpLog,
+    InvitationLog,
+    RecapEmailTemplate,
+    chosen_date_display,
+)
 
 
 def render_invitation_subject(subject_template, context):
@@ -108,7 +114,10 @@ def send_test_email(to_email, subject_template, body_template, signature_templat
     body_html = render_invitation_body(body_template, context)
     signature_html = render_invitation_body(signature_template, context)
     html = render_template(
-        "emails/invitation.html", rsvp_url=context["lien"], body_html=body_html, signature_html=signature_html
+        "emails/invitation.html",
+        rsvp_url=context["lien"],
+        body_html=body_html,
+        signature_html=signature_html,
     )
 
     try:
@@ -136,7 +145,10 @@ def send_test_recap_email(to_email, subject_template, body_template, signature_t
     body_html = render_invitation_body(body_template, context)
     signature_html = render_invitation_body(signature_template, context)
     html = render_template(
-        "emails/recap.html", edit_url=context["lien"], body_html=body_html, signature_html=signature_html
+        "emails/recap.html",
+        edit_url=context["lien"],
+        body_html=body_html,
+        signature_html=signature_html,
     )
 
     try:
@@ -167,7 +179,10 @@ def send_recap_email(guest):
     signature_html = render_invitation_body(template.signature, context)
 
     html = render_template(
-        "emails/recap.html", edit_url=context["lien"], body_html=body_html, signature_html=signature_html
+        "emails/recap.html",
+        edit_url=context["lien"],
+        body_html=body_html,
+        signature_html=signature_html,
     )
 
     try:
@@ -182,7 +197,9 @@ def send_recap_email(guest):
         logger.info("Recap email sent to guest {} ({})", guest.id, guest.email)
         return True
     except Exception as exc:  # noqa: BLE001 -- Resend SDK can raise several error types
-        logger.exception("Failed to send recap email to guest {} ({}) - {}", guest.id, guest.email, exc)
+        logger.exception(
+            "Failed to send recap email to guest {} ({}) - {}", guest.id, guest.email, exc
+        )
         return False
 
 
@@ -202,7 +219,10 @@ def send_invitation_email(guest):
     signature_html = render_invitation_body(template.signature, context)
 
     html = render_template(
-        "emails/invitation.html", rsvp_url=rsvp_url, body_html=body_html, signature_html=signature_html
+        "emails/invitation.html",
+        rsvp_url=rsvp_url,
+        body_html=body_html,
+        signature_html=signature_html,
     )
 
     log = InvitationLog(guest_id=guest.id, channel="email")
@@ -224,7 +244,9 @@ def send_invitation_email(guest):
         logger.info("Invitation email sent to guest {} ({})", guest.id, guest.email)
         return True
     except Exception as exc:  # noqa: BLE001 -- Resend SDK can raise several error types
-        logger.exception("Failed to send invitation email to guest {} ({}) - {}", guest.id, guest.email, exc)
+        logger.exception(
+            "Failed to send invitation email to guest {} ({}) - {}", guest.id, guest.email, exc
+        )
         log.status = "failed"
         log.error_message = str(exc)
         db.session.add(log)
@@ -290,7 +312,9 @@ def send_follow_up_email(guest, subject_template, body_template):
         logger.info("Follow-up email sent to guest {} ({})", guest.id, guest.email)
         return True
     except Exception as exc:  # noqa: BLE001 -- Resend SDK can raise several error types
-        logger.exception("Failed to send follow-up email to guest {} ({}) - {}", guest.id, guest.email, exc)
+        logger.exception(
+            "Failed to send follow-up email to guest {} ({}) - {}", guest.id, guest.email, exc
+        )
         log.status = "failed"
         log.error_message = str(exc)
         db.session.add(log)

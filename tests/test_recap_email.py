@@ -72,9 +72,7 @@ def test_details_submission_sends_recap_email_once(client, guest, app, monkeypat
     from app.models import Guest
 
     calls = []
-    monkeypatch.setattr(
-        "app.guest.routes.send_recap_email", lambda g: calls.append(g.id) or True
-    )
+    monkeypatch.setattr("app.guest.routes.send_recap_email", lambda g: calls.append(g.id) or True)
 
     client.post(f"/r/{guest.token}/confirmer")
     client.post(f"/r/{guest.token}/details", data={"dietary_notes": "Sans sel"})
@@ -96,9 +94,7 @@ def test_details_submission_skips_recap_email_without_address(client, app, monke
     db.session.commit()
 
     calls = []
-    monkeypatch.setattr(
-        "app.guest.routes.send_recap_email", lambda g: calls.append(g.id) or True
-    )
+    monkeypatch.setattr("app.guest.routes.send_recap_email", lambda g: calls.append(g.id) or True)
 
     client.post(f"/r/{guest.token}/confirmer")
     client.post(f"/r/{guest.token}/details", data={"dietary_notes": "Rien à signaler"})
@@ -113,7 +109,11 @@ def test_recap_email_template_route_requires_login(client):
 def test_recap_email_template_route_saves_changes(admin_client):
     response = admin_client.post(
         "/admin/recap-email-template",
-        data={"subject": "Nouvel objet {prenom}", "body": "Nouveau corps {dates}", "action": "save"},
+        data={
+            "subject": "Nouvel objet {prenom}",
+            "body": "Nouveau corps {dates}",
+            "action": "save",
+        },
     )
     assert response.status_code == 302
     template = RecapEmailTemplate.get_current()

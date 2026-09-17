@@ -149,7 +149,10 @@ def guests_list():
     guests = query.order_by(Guest.last_name, Guest.first_name).all()
     date_chosen = EventOption.get_chosen() is not None
     return render_template(
-        "admin/guests_list.html", guests=guests, status_filter=status_filter, date_chosen=date_chosen
+        "admin/guests_list.html",
+        guests=guests,
+        status_filter=status_filter,
+        date_chosen=date_chosen,
     )
 
 
@@ -175,9 +178,7 @@ def import_guests():
         if result.added:
             flash(f"{result.added} invité·e(s) importé·e(s).", "success")
         if result.skipped_duplicate:
-            flash(
-                f"{result.skipped_duplicate} ligne(s) ignorée(s) (déjà présent·e·s).", "success"
-            )
+            flash(f"{result.skipped_duplicate} ligne(s) ignorée(s) (déjà présent·e·s).", "success")
         for error in result.errors[:10]:
             flash(error, "error")
 
@@ -251,7 +252,10 @@ def send_invitations():
         attempted += guest_attempted
         sent += guest_sent
     failed = attempted - sent
-    flash(f"{sent} invitation(s) envoyée(s), {failed} échec(s).", "success" if failed == 0 else "error")
+    flash(
+        f"{sent} invitation(s) envoyée(s), {failed} échec(s).",
+        "success" if failed == 0 else "error",
+    )
     return redirect(url_for("admin.guests_list"))
 
 
@@ -280,7 +284,11 @@ def follow_up():
     if status_filter not in {"pending", "confirmed", "declined"}:
         status_filter = "pending"
 
-    guests = Guest.query.filter_by(rsvp_status=status_filter).order_by(Guest.last_name, Guest.first_name).all()
+    guests = (
+        Guest.query.filter_by(rsvp_status=status_filter)
+        .order_by(Guest.last_name, Guest.first_name)
+        .all()
+    )
 
     form = FollowUpComposeForm()
     if request.method == "GET":
@@ -296,7 +304,9 @@ def follow_up():
             if form.channel_email.data:
                 if not form.test_email.data:
                     flash("Indiquez une adresse e-mail pour l'envoi de test.", "error")
-                elif send_test_follow_up_email(form.test_email.data, form.subject.data or "", form.body.data):
+                elif send_test_follow_up_email(
+                    form.test_email.data, form.subject.data or "", form.body.data
+                ):
                     flash(f"E-mail de test envoyé à {form.test_email.data}.", "success")
                 else:
                     flash("Échec de l'envoi de l'e-mail de test.", "error")
@@ -314,10 +324,16 @@ def follow_up():
                 flash("Sélectionnez au moins un·e destinataire.", "error")
             else:
                 sent, failed = _send_follow_up(
-                    target_guests, form.subject.data or "", form.body.data,
-                    form.channel_email.data, form.channel_sms.data,
+                    target_guests,
+                    form.subject.data or "",
+                    form.body.data,
+                    form.channel_email.data,
+                    form.channel_sms.data,
                 )
-                flash(f"{sent} message(s) envoyé(s), {failed} échec(s).", "success" if failed == 0 else "error")
+                flash(
+                    f"{sent} message(s) envoyé(s), {failed} échec(s).",
+                    "success" if failed == 0 else "error",
+                )
                 return redirect(url_for("admin.follow_up", status_filter=status_filter))
     elif request.method == "POST":
         for field_errors in form.errors.values():
@@ -325,8 +341,12 @@ def follow_up():
                 flash(message, "error")
 
     context = follow_up_preview_context()
-    preview_subject = render_invitation_subject(form.subject.data, context) if form.subject.data else ""
-    preview_email_body = render_follow_up_markdown(form.body.data, context) if form.body.data else ""
+    preview_subject = (
+        render_invitation_subject(form.subject.data, context) if form.subject.data else ""
+    )
+    preview_email_body = (
+        render_follow_up_markdown(form.body.data, context) if form.body.data else ""
+    )
     preview_sms_body = render_follow_up_sms_text(form.body.data, context) if form.body.data else ""
 
     return render_template(
@@ -596,7 +616,14 @@ def export_csv():
     buffer = io.StringIO()
     writer = csv.writer(buffer)
     writer.writerow(
-        ["Nom", "Statut", "Dates disponibles", "Allergies / notes", "Accompagnant", "Allergies accompagnant"]
+        [
+            "Nom",
+            "Statut",
+            "Dates disponibles",
+            "Allergies / notes",
+            "Accompagnant",
+            "Allergies accompagnant",
+        ]
     )
     for guest in guests:
         event_date = ", ".join(option.display_text for option in guest.event_options)

@@ -10,8 +10,19 @@ def test_follow_up_route_requires_login(client):
 
 
 def test_follow_up_lists_only_matching_status(admin_client):
-    db.session.add(Guest(first_name="Jeanne", last_name="Dupont", email="jeanne@example.com", rsvp_status="pending"))
-    db.session.add(Guest(first_name="Paul", last_name="Martin", email="paul@example.com", rsvp_status="confirmed"))
+    db.session.add(
+        Guest(
+            first_name="Jeanne",
+            last_name="Dupont",
+            email="jeanne@example.com",
+            rsvp_status="pending",
+        )
+    )
+    db.session.add(
+        Guest(
+            first_name="Paul", last_name="Martin", email="paul@example.com", rsvp_status="confirmed"
+        )
+    )
     db.session.commit()
 
     response = admin_client.get("/admin/follow-up?status_filter=confirmed")
@@ -27,8 +38,12 @@ def test_follow_up_send_respects_checkbox_exclusion(admin_client, monkeypatch):
         lambda guest, subject, body: calls.append(guest.id) or True,
     )
 
-    included = Guest(first_name="Jeanne", last_name="Dupont", email="jeanne@example.com", rsvp_status="confirmed")
-    excluded = Guest(first_name="Paul", last_name="Martin", email="paul@example.com", rsvp_status="confirmed")
+    included = Guest(
+        first_name="Jeanne", last_name="Dupont", email="jeanne@example.com", rsvp_status="confirmed"
+    )
+    excluded = Guest(
+        first_name="Paul", last_name="Martin", email="paul@example.com", rsvp_status="confirmed"
+    )
     db.session.add(included)
     db.session.add(excluded)
     db.session.commit()
@@ -79,14 +94,23 @@ def test_follow_up_send_both_channels_creates_two_logs(admin_client, monkeypatch
 
 def test_follow_up_creates_failed_log_on_provider_error(admin_client, monkeypatch):
     def fake_send(guest, subject, body):
-        log = FollowUpLog(guest_id=guest.id, channel="email", subject=subject, body="", status="failed", error_message="boom")
+        log = FollowUpLog(
+            guest_id=guest.id,
+            channel="email",
+            subject=subject,
+            body="",
+            status="failed",
+            error_message="boom",
+        )
         db.session.add(log)
         db.session.commit()
         return False
 
     monkeypatch.setattr("app.admin.routes.send_follow_up_email", fake_send)
 
-    guest = Guest(first_name="Jeanne", last_name="Dupont", email="jeanne@example.com", rsvp_status="pending")
+    guest = Guest(
+        first_name="Jeanne", last_name="Dupont", email="jeanne@example.com", rsvp_status="pending"
+    )
     db.session.add(guest)
     db.session.commit()
 
@@ -108,9 +132,13 @@ def test_follow_up_creates_failed_log_on_provider_error(admin_client, monkeypatc
 
 
 def test_follow_up_test_send_does_not_create_log_or_touch_guests(admin_client, monkeypatch):
-    monkeypatch.setattr("app.admin.routes.send_test_follow_up_email", lambda to, subject, body: True)
+    monkeypatch.setattr(
+        "app.admin.routes.send_test_follow_up_email", lambda to, subject, body: True
+    )
 
-    guest = Guest(first_name="Jeanne", last_name="Dupont", email="jeanne@example.com", rsvp_status="pending")
+    guest = Guest(
+        first_name="Jeanne", last_name="Dupont", email="jeanne@example.com", rsvp_status="pending"
+    )
     db.session.add(guest)
     db.session.commit()
 
@@ -133,7 +161,9 @@ def test_follow_up_test_send_does_not_create_log_or_touch_guests(admin_client, m
 def test_follow_up_appears_in_journal(admin_client, monkeypatch):
     monkeypatch.setattr("app.emails.resend.Emails.send", lambda payload: {"id": "test-message-id"})
 
-    guest = Guest(first_name="Jeanne", last_name="Dupont", email="jeanne@example.com", rsvp_status="pending")
+    guest = Guest(
+        first_name="Jeanne", last_name="Dupont", email="jeanne@example.com", rsvp_status="pending"
+    )
     db.session.add(guest)
     db.session.commit()
 
@@ -151,7 +181,7 @@ def test_follow_up_appears_in_journal(admin_client, monkeypatch):
 
     response = admin_client.get("/admin/journal")
     assert response.status_code == 200
-    assert "Nouvelles concernant la date".encode() in response.data
+    assert b"Nouvelles concernant la date" in response.data
 
 
 def test_follow_up_date_placeholder_uses_chosen_option(admin_client, monkeypatch):
@@ -159,7 +189,9 @@ def test_follow_up_date_placeholder_uses_chosen_option(admin_client, monkeypatch
 
     option = EventOption(label="Samedi", starts_at=datetime(2026, 9, 12, 15, 0), is_chosen=True)
     db.session.add(option)
-    guest = Guest(first_name="Jeanne", last_name="Dupont", email="jeanne@example.com", rsvp_status="pending")
+    guest = Guest(
+        first_name="Jeanne", last_name="Dupont", email="jeanne@example.com", rsvp_status="pending"
+    )
     db.session.add(guest)
     db.session.commit()
 
@@ -182,7 +214,9 @@ def test_follow_up_date_placeholder_uses_chosen_option(admin_client, monkeypatch
 def test_follow_up_date_placeholder_falls_back_when_no_option_chosen(admin_client, monkeypatch):
     monkeypatch.setattr("app.emails.resend.Emails.send", lambda payload: {"id": "test-message-id"})
 
-    guest = Guest(first_name="Jeanne", last_name="Dupont", email="jeanne@example.com", rsvp_status="pending")
+    guest = Guest(
+        first_name="Jeanne", last_name="Dupont", email="jeanne@example.com", rsvp_status="pending"
+    )
     db.session.add(guest)
     db.session.commit()
 

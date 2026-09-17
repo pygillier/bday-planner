@@ -51,6 +51,16 @@ tasks:
     cmds:
       - docker compose exec web ruff format .
 
+  precommit-install:
+    desc: Install the pre-commit git hook (run once per clone)
+    cmds:
+      - uv run pre-commit install
+
+  precommit:
+    desc: Run pre-commit hooks against all files
+    cmds:
+      - uv run pre-commit run --all-files
+
   deploy:
     desc: Pull the latest published image and (re)start the production stack
     cmds:

@@ -9,7 +9,10 @@ def test_bold_italic_render_to_tags():
 
 def test_links_rendered_with_safe_href():
     html = str(render_follow_up_markdown("[cliquez ici](https://example.com)", {}))
-    assert '<a href="https://example.com">cliquez ici</a>' == html.replace("<p>", "").replace("</p>", "")
+    assert (
+        html.replace("<p>", "").replace("</p>", "")
+        == '<a href="https://example.com">cliquez ici</a>'
+    )
 
 
 def test_lists_render_to_ul_li():

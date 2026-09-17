@@ -1,7 +1,7 @@
 def test_landing_shows_greeting(client, guest):
     response = client.get(f"/r/{guest.token}", follow_redirects=True)
     assert response.status_code == 200
-    assert "Jeanne".encode() in response.data
+    assert b"Jeanne" in response.data
 
 
 def test_invalid_token_returns_404(client):
@@ -12,11 +12,11 @@ def test_invalid_token_returns_404(client):
 def test_confirm_then_decline(client, guest):
     client.post(f"/r/{guest.token}/confirmer")
     response = client.get(f"/r/{guest.token}", follow_redirects=True)
-    assert "confirm".encode() in response.data.lower()
+    assert b"confirm" in response.data.lower()
 
     client.post(f"/r/{guest.token}/decliner")
     response = client.get(f"/r/{guest.token}")
-    assert "d\xe9clin".encode("utf-8") in response.data.lower() or b"pas pouvoir venir" in response.data
+    assert "d\xe9clin".encode() in response.data.lower() or b"pas pouvoir venir" in response.data
 
 
 def test_add_and_remove_plus_one(client, guest, app):
@@ -93,7 +93,7 @@ def test_details_requires_email_when_missing(client, app):
         data={"dietary_notes": "Rien de particulier"},
     )
     assert response.status_code == 200
-    assert "renseigner votre e-mail".encode() in response.data
+    assert b"renseigner votre e-mail" in response.data
 
     response = client.post(
         f"/r/{guest.token}/details",

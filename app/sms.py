@@ -46,7 +46,10 @@ def _twilio_client():
     if api_key_sid and api_key_secret:
         username, password = api_key_sid, api_key_secret
     else:
-        username, password = current_app.config["TWILIO_ACCOUNT_SID"], current_app.config["TWILIO_AUTH_TOKEN"]
+        username, password = (
+            current_app.config["TWILIO_ACCOUNT_SID"],
+            current_app.config["TWILIO_AUTH_TOKEN"],
+        )
 
     return Client(
         username,
@@ -72,7 +75,9 @@ def send_test_sms(to_phone, body_template, signature_template=""):
     text = f"[Test] {body}" + (f"\n{signature}" if signature else "")
 
     try:
-        _twilio_client().messages.create(to=e164, from_=current_app.config["TWILIO_FROM_NUMBER"], body=text)
+        _twilio_client().messages.create(
+            to=e164, from_=current_app.config["TWILIO_FROM_NUMBER"], body=text
+        )
         logger.info("Test SMS sent to {}", to_phone)
         return True
     except TwilioException:
@@ -90,7 +95,9 @@ def send_invitation_sms(guest):
 
     e164 = to_e164_fr(guest.phone)
     if e164 is None:
-        logger.warning("Cannot send invitation SMS to guest {} - invalid phone {}", guest.id, guest.phone)
+        logger.warning(
+            "Cannot send invitation SMS to guest {} - invalid phone {}", guest.id, guest.phone
+        )
         log.status = "failed"
         log.error_message = "Numéro de téléphone invalide."
         db.session.add(log)
@@ -138,7 +145,9 @@ def send_test_follow_up_sms(to_phone, body_template):
     text = f"[Test] {render_follow_up_sms_text(body_template, context)}"
 
     try:
-        _twilio_client().messages.create(to=e164, from_=current_app.config["TWILIO_FROM_NUMBER"], body=text)
+        _twilio_client().messages.create(
+            to=e164, from_=current_app.config["TWILIO_FROM_NUMBER"], body=text
+        )
         logger.info("Test follow-up SMS sent to {}", to_phone)
         return True
     except TwilioException:
@@ -155,7 +164,9 @@ def send_follow_up_sms(guest, body_template):
 
     e164 = to_e164_fr(guest.phone)
     if e164 is None:
-        logger.warning("Cannot send follow-up SMS to guest {} - invalid phone {}", guest.id, guest.phone)
+        logger.warning(
+            "Cannot send follow-up SMS to guest {} - invalid phone {}", guest.id, guest.phone
+        )
         log.status = "failed"
         log.error_message = "Numéro de téléphone invalide."
         db.session.add(log)
@@ -172,7 +183,9 @@ def send_follow_up_sms(guest, body_template):
     log.body = text
 
     try:
-        message = _twilio_client().messages.create(to=e164, from_=current_app.config["TWILIO_FROM_NUMBER"], body=text)
+        message = _twilio_client().messages.create(
+            to=e164, from_=current_app.config["TWILIO_FROM_NUMBER"], body=text
+        )
         log.provider_message_id = message.sid
         log.status = "sent"
         db.session.add(log)

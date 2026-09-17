@@ -1,5 +1,6 @@
 import secrets
 from datetime import UTC, datetime
+from typing import ClassVar
 
 from app.extensions import db
 
@@ -20,7 +21,10 @@ class Guest(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     token = db.Column(
-        db.String(43), unique=True, nullable=False, index=True,
+        db.String(43),
+        unique=True,
+        nullable=False,
+        index=True,
         default=lambda: secrets.token_urlsafe(6),
     )
     first_name = db.Column(db.String(120), nullable=False)
@@ -38,21 +42,28 @@ class Guest(db.Model):
     recap_sent_at = db.Column(db.DateTime, nullable=True)
 
     created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
-    updated_at = db.Column(
-        db.DateTime, default=utcnow, onupdate=utcnow, nullable=False
-    )
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow, nullable=False)
 
     plus_ones = db.relationship(
         "PlusOne", backref="guest", cascade="all, delete-orphan", order_by="PlusOne.id"
     )
     invitation_logs = db.relationship(
-        "InvitationLog", backref="guest", cascade="all, delete-orphan", order_by="InvitationLog.sent_at.desc()"
+        "InvitationLog",
+        backref="guest",
+        cascade="all, delete-orphan",
+        order_by="InvitationLog.sent_at.desc()",
     )
     follow_up_logs = db.relationship(
-        "FollowUpLog", backref="guest", cascade="all, delete-orphan", order_by="FollowUpLog.sent_at.desc()"
+        "FollowUpLog",
+        backref="guest",
+        cascade="all, delete-orphan",
+        order_by="FollowUpLog.sent_at.desc()",
     )
     event_logs = db.relationship(
-        "GuestEventLog", backref="guest", cascade="all, delete-orphan", order_by="GuestEventLog.created_at.desc()"
+        "GuestEventLog",
+        backref="guest",
+        cascade="all, delete-orphan",
+        order_by="GuestEventLog.created_at.desc()",
     )
     event_options = db.relationship(
         "EventOption",
@@ -71,7 +82,7 @@ class Guest(db.Model):
             return 0
         return 1 + len(self.plus_ones)
 
-    INVITATION_CHANNEL_LABELS = {"email": "E-mail", "sms": "SMS"}
+    INVITATION_CHANNEL_LABELS: ClassVar[dict[str, str]] = {"email": "E-mail", "sms": "SMS"}
 
     @property
     def invitation_channel_labels(self):
@@ -149,7 +160,11 @@ class FollowUpLog(db.Model):
     @property
     def label(self):
         channel_label = FOLLOW_UP_CHANNEL_LABELS.get(self.channel, self.channel)
-        verb = "Message de relance envoyé" if self.status == "sent" else "Échec de l'envoi du message de relance"
+        verb = (
+            "Message de relance envoyé"
+            if self.status == "sent"
+            else "Échec de l'envoi du message de relance"
+        )
         base = f"{verb} par {channel_label}"
         return f"{base} : {self.subject}" if self.subject else base
 
@@ -180,8 +195,18 @@ class GuestEventLog(db.Model):
 
 FR_WEEKDAYS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
 FR_MONTHS = [
-    "janvier", "février", "mars", "avril", "mai", "juin",
-    "juillet", "août", "septembre", "octobre", "novembre", "décembre",
+    "janvier",
+    "février",
+    "mars",
+    "avril",
+    "mai",
+    "juin",
+    "juillet",
+    "août",
+    "septembre",
+    "octobre",
+    "novembre",
+    "décembre",
 ]
 
 
@@ -278,7 +303,9 @@ SMS_VARIABLES = {
     "lien": "Lien personnel de confirmation",
 }
 
-DEFAULT_SMS_BODY = "Bonjour {prenom}, vous êtes invité·e à fêter les 80 ans ! Confirmez votre présence : {lien}"
+DEFAULT_SMS_BODY = (
+    "Bonjour {prenom}, vous êtes invité·e à fêter les 80 ans ! Confirmez votre présence : {lien}"
+)
 
 
 class SmsTemplate(db.Model):

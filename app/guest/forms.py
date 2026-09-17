@@ -12,9 +12,7 @@ class DetailsForm(FlaskForm):
     event_option_ids = MultiCheckboxField(
         "À quelles dates seriez-vous disponible ?", choices=[], coerce=int, validators=[Optional()]
     )
-    email = StringField(
-        "Adresse e-mail", validators=[Optional(), Email(), Length(max=255)]
-    )
+    email = StringField("Adresse e-mail", validators=[Optional(), Email(), Length(max=255)])
     dietary_notes = TextAreaField(
         "Allergies / régime particulier", validators=[Optional(), Length(max=2000)]
     )

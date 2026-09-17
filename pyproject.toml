@@ -24,4 +24,34 @@ dependencies = [
 dev = [
     "ruff==0.9.4",
     "pytest==8.3.4",
+    "pre-commit==4.1.0",
 ]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+extend-exclude = ["migrations/versions"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "SIM",  # flake8-simplify
+    "C4",   # flake8-comprehensions
+    "DTZ",  # flake8-datetimez (catch naive datetime.utcnow() usage)
+    "BLE",  # flake8-blind-except
+    "RUF",  # ruff-specific rules
+]
+ignore = [
+    "E501",  # line length is handled by ruff format
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["DTZ001"]  # naive datetimes are fine in test fixtures
