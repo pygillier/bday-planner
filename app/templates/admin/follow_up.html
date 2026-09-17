@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% from "admin/_shell.html" import sidebar %}
+{% block title %}Message de relance — {{ site_title }}{% endblock %}
+{% block body_class %}admin{% endblock %}
+{% block content %}
+<div class="admin-shell">
+  {{ sidebar("follow_up") }}
+  <main class="admin-main">
+    <div class="admin-header">
+      <h1>Message de relance</h1>
+    </div>
+
+    <p>Composez un message ponctuel (non enregistré) et envoyez-le par e-mail et/ou SMS aux invité·e·s d'un statut donné.</p>
+
+    <form method="get" style="margin-bottom:1.5rem;">
+      <div class="field" style="max-width:20rem;">
+        <label for="status_filter_link">Filtrer par statut</label>
+        <select id="status_filter_link" name="status_filter" onchange="this.form.submit()">
+          <option value="pending" {{ "selected" if status_filter == "pending" }}>En attente</option>
+          <option value="confirmed" {{ "selected" if status_filter == "confirmed" }}>Confirmé·e</option>
+          <option value="declined" {{ "selected" if status_filter == "declined" }}>Décliné·e</option>
+        </select>
+      </div>
+    </form>
+
+    <form method="post" style="max-width:40rem;">
+      {{ form.csrf_token }}
+      <input type="hidden" name="status_filter" value="{{ status_filter }}">
+
+      <h2>Destinataires ({{ guests|length }})</h2>
+      {% if guests %}
+      <p>
+        <label><input type="checkbox" id="select-all-guests" checked> Tout sélectionner / désélectionner</label>
+      </p>
+      <table class="admin-table admin-table--cards" style="margin-bottom:1.5rem;">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Nom</th>
+            <th>E-mail</th>
+            <th>Téléphone</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for guest in guests %}
+          <tr>
+            <td><input type="checkbox" class="guest-checkbox" name="guest_ids" value="{{ guest.id }}" {{ "checked" if guest.id in (form.guest_ids.data or []) }}></td>
+            <td>{{ guest.full_name }}</td>
+            <td data-label="E-mail" class="contact-check {{ 'contact-check--yes' if guest.email else 'contact-check--no' }}">{{ "✓" if guest.email else "✗" }}</td>
+            <td data-label="Téléphone" class="contact-check {{ 'contact-check--yes' if guest.phone else 'contact-check--no' }}">{{ "✓" if guest.phone else "✗" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p>Aucun·e invité·e avec ce statut.</p>
+      {% endif %}
+
+      <h2>Message</h2>
+      <div style="margin-bottom:1.5rem; display:flex; gap:1.5rem;">
+        <label style="display:inline-flex; align-items:center; gap:0.4rem; font-weight:600;">
+          <input type="checkbox" name="channel_email" style="width:auto;" {{ "checked" if form.channel_email.data }}> E-mail
+        </label>
+        <label style="display:inline-flex; align-items:center; gap:0.4rem; font-weight:600;">
+          <input type="checkbox" name="channel_sms" style="width:auto;" {{ "checked" if form.channel_sms.data }}> SMS
+        </label>
+      </div>
+      <div class="field">
+        {{ form.subject.label }}
+        {{ form.subject() }}
+      </div>
+      <div class="field">
+        {{ form.body.label }}
+        {{ form.body(rows=8) }}
+      </div>
+      <p style="color:var(--stone-dark); font-size:0.85rem;">Variables disponibles : {% for name in variables %}<code>{{ '{' }}{{ name }}{{ '}' }}</code>{{ ", " if not loop.last }}{% endfor %}</p>
+
+      <div class="actions-row">
+        <button type="submit" name="action" value="preview" class="btn-sm">Aperçu</button>
+        <button type="submit" name="action" value="send" class="btn-sm btn-sm--primary" onclick="return confirm('Envoyer ce message aux destinataires sélectionné·e·s ?');">Envoyer</button>
+      </div>
+
+      <h2 style="margin-top:2.5rem;">Aperçu</h2>
+      <p style="color:var(--stone-dark); font-size:0.9rem;">Avec des exemples de valeurs ({{ '{prenom}' }} → Jeanne, {{ '{nom}' }} → Dupont).</p>
+      <h3 style="margin-bottom:0.5rem;">E-mail</h3>
+      <div style="border:1px solid var(--stone); border-radius:0.75rem; padding:1.5rem; background:var(--white); margin-bottom:1rem;">
+        <p style="margin:0 0 1rem; font-weight:600;">Objet : {{ preview_subject }}</p>
+        <div>{{ preview_email_body }}</div>
+      </div>
+      <h3 style="margin-bottom:0.5rem;">SMS</h3>
+      <div style="border:1px solid var(--stone); border-radius:0.75rem; padding:1.5rem; background:var(--white);">
+        <pre style="white-space:pre-wrap; font-family:inherit; margin:0;">{{ preview_sms_body }}</pre>
+      </div>
+
+      <h2 style="margin-top:2.5rem;">Tester l'envoi</h2>
+      <p style="color:var(--stone-dark); font-size:0.9rem;">
+        Envoie le message ci-dessus (même non enregistré) à une adresse et/ou un numéro de votre choix, avec des exemples de valeurs, sur les canaux cochés ci-dessus.
+      </p>
+      <div class="inline-test-row">
+        <div class="field" style="flex:1; margin-bottom:0;">
+          {{ form.test_email(placeholder="vous@example.com") }}
+        </div>
+        <div class="field" style="flex:1; margin-bottom:0;">
+          {{ form.test_phone(placeholder="06 12 34 56 78") }}
+        </div>
+        <button type="submit" name="action" value="test" class="btn-sm">Envoyer un test</button>
+      </div>
+    </form>
+  </main>
+</div>
+<script>
+  (function () {
+    var selectAll = document.getElementById("select-all-guests");
+    if (!selectAll) return;
+    selectAll.addEventListener("change", function () {
+      document.querySelectorAll(".guest-checkbox").forEach(function (checkbox) {
+        checkbox.checked = selectAll.checked;
+      });
+    });
+  })();
+</script>
+{% endblock %}

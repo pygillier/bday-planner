@@ -7,7 +7,7 @@ def test_dashboard_redirects_when_unauthenticated(client):
 def test_login_page_renders(client):
     response = client.get("/admin/login")
     assert response.status_code == 200
-    assert "Pocket ID".encode() in response.data
+    assert b"Pocket ID" in response.data
 
 
 def test_dashboard_reachable_with_session(client):

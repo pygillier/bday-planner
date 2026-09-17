@@ -4,8 +4,14 @@ from app.models import Guest
 
 def test_send_invitation_email_only(admin_client, monkeypatch):
     calls = {"email": 0, "sms": 0}
-    monkeypatch.setattr("app.admin.routes.send_invitation_email", lambda g: calls.__setitem__("email", calls["email"] + 1) or True)
-    monkeypatch.setattr("app.admin.routes.send_invitation_sms", lambda g: calls.__setitem__("sms", calls["sms"] + 1) or True)
+    monkeypatch.setattr(
+        "app.admin.routes.send_invitation_email",
+        lambda g: calls.__setitem__("email", calls["email"] + 1) or True,
+    )
+    monkeypatch.setattr(
+        "app.admin.routes.send_invitation_sms",
+        lambda g: calls.__setitem__("sms", calls["sms"] + 1) or True,
+    )
 
     guest = Guest(first_name="Jeanne", last_name="Dupont", email="jeanne@example.com")
     db.session.add(guest)
@@ -18,8 +24,14 @@ def test_send_invitation_email_only(admin_client, monkeypatch):
 
 def test_send_invitation_phone_only(admin_client, monkeypatch):
     calls = {"email": 0, "sms": 0}
-    monkeypatch.setattr("app.admin.routes.send_invitation_email", lambda g: calls.__setitem__("email", calls["email"] + 1) or True)
-    monkeypatch.setattr("app.admin.routes.send_invitation_sms", lambda g: calls.__setitem__("sms", calls["sms"] + 1) or True)
+    monkeypatch.setattr(
+        "app.admin.routes.send_invitation_email",
+        lambda g: calls.__setitem__("email", calls["email"] + 1) or True,
+    )
+    monkeypatch.setattr(
+        "app.admin.routes.send_invitation_sms",
+        lambda g: calls.__setitem__("sms", calls["sms"] + 1) or True,
+    )
 
     guest = Guest(first_name="Paul", last_name="Martin", phone="0612345678")
     db.session.add(guest)
@@ -32,10 +44,18 @@ def test_send_invitation_phone_only(admin_client, monkeypatch):
 
 def test_send_invitation_both_channels(admin_client, monkeypatch):
     calls = {"email": 0, "sms": 0}
-    monkeypatch.setattr("app.admin.routes.send_invitation_email", lambda g: calls.__setitem__("email", calls["email"] + 1) or True)
-    monkeypatch.setattr("app.admin.routes.send_invitation_sms", lambda g: calls.__setitem__("sms", calls["sms"] + 1) or True)
+    monkeypatch.setattr(
+        "app.admin.routes.send_invitation_email",
+        lambda g: calls.__setitem__("email", calls["email"] + 1) or True,
+    )
+    monkeypatch.setattr(
+        "app.admin.routes.send_invitation_sms",
+        lambda g: calls.__setitem__("sms", calls["sms"] + 1) or True,
+    )
 
-    guest = Guest(first_name="Alice", last_name="Durand", email="alice@example.com", phone="0612345678")
+    guest = Guest(
+        first_name="Alice", last_name="Durand", email="alice@example.com", phone="0612345678"
+    )
     db.session.add(guest)
     db.session.commit()
 
@@ -58,8 +78,14 @@ def test_send_invitation_no_contact_info(admin_client, monkeypatch):
 
 def test_bulk_send_includes_phone_only_guests(admin_client, monkeypatch):
     calls = {"email": 0, "sms": 0}
-    monkeypatch.setattr("app.admin.routes.send_invitation_email", lambda g: calls.__setitem__("email", calls["email"] + 1) or True)
-    monkeypatch.setattr("app.admin.routes.send_invitation_sms", lambda g: calls.__setitem__("sms", calls["sms"] + 1) or True)
+    monkeypatch.setattr(
+        "app.admin.routes.send_invitation_email",
+        lambda g: calls.__setitem__("email", calls["email"] + 1) or True,
+    )
+    monkeypatch.setattr(
+        "app.admin.routes.send_invitation_sms",
+        lambda g: calls.__setitem__("sms", calls["sms"] + 1) or True,
+    )
 
     db.session.add(Guest(first_name="Jeanne", last_name="Dupont", email="jeanne@example.com"))
     db.session.add(Guest(first_name="Paul", last_name="Martin", phone="0612345678"))

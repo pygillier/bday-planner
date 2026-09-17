@@ -40,7 +40,9 @@ def test_get_current_creates_default_singleton(app):
 
 
 def test_render_sms_body_substitutes_without_escaping():
-    body = render_sms_body("Bonjour {prenom}, lien : {lien}", {"prenom": "Jeanne", "lien": "http://x/y"})
+    body = render_sms_body(
+        "Bonjour {prenom}, lien : {lien}", {"prenom": "Jeanne", "lien": "http://x/y"}
+    )
     assert body == "Bonjour Jeanne, lien : http://x/y"
 
 
@@ -125,9 +127,7 @@ def test_sms_template_route_saves_changes(admin_client):
 
 
 def test_sms_template_route_test_send_does_not_persist(admin_client, monkeypatch):
-    monkeypatch.setattr(
-        "app.admin.routes.send_test_sms", lambda to, body, signature="": True
-    )
+    monkeypatch.setattr("app.admin.routes.send_test_sms", lambda to, body, signature="": True)
     original = SmsTemplate.get_current()
     original_body = original.body
 

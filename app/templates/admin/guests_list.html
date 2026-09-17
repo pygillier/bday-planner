@@ -13,12 +13,12 @@
         <a class="btn-sm" href="{{ url_for('admin.import_guests') }}">Importer (CSV)</a>
         <form method="post" action="{{ url_for('admin.send_invitations') }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button type="submit" class="btn-sm">Envoyer les invitations en attente</button>
+          <button type="submit" class="btn-sm" {{ "disabled" if date_chosen }} title="{{ 'Une date a été retenue — les invitations ne sont plus envoyées.' if date_chosen }}">Envoyer les invitations en attente</button>
         </form>
       </div>
     </div>
 
-    <table class="admin-table">
+    <table class="admin-table admin-table--cards">
       <thead>
         <tr>
           <th>Nom</th>
@@ -35,12 +35,12 @@
         {% for guest in guests %}
         <tr>
           <td>{{ guest.full_name }}</td>
-          <td><span class="badge badge--{{ guest.rsvp_status }}">{{ guest.rsvp_status }}</span></td>
-          <td class="contact-check {{ 'contact-check--yes' if guest.email else 'contact-check--no' }}" title="{{ guest.email or '' }}">{{ "✓" if guest.email else "✗" }}</td>
-          <td class="contact-check {{ 'contact-check--yes' if guest.phone else 'contact-check--no' }}" title="{{ guest.phone or '' }}">{{ "✓" if guest.phone else "✗" }}</td>
-          <td>{{ guest.event_options|map(attribute="display_text")|join(", ") if guest.event_options else "—" }}</td>
-          <td>{{ guest.plus_ones|length }}</td>
-          <td>
+          <td data-label="Statut"><span class="badge badge--{{ guest.rsvp_status }}">{{ guest.rsvp_status }}</span></td>
+          <td data-label="E-mail" class="contact-check {{ 'contact-check--yes' if guest.email else 'contact-check--no' }}" title="{{ guest.email or '' }}">{{ "✓" if guest.email else "✗" }}</td>
+          <td data-label="Téléphone" class="contact-check {{ 'contact-check--yes' if guest.phone else 'contact-check--no' }}" title="{{ guest.phone or '' }}">{{ "✓" if guest.phone else "✗" }}</td>
+          <td data-label="Dates disponibles">{{ guest.event_options|map(attribute="display_text")|join(", ") if guest.event_options else "—" }}</td>
+          <td data-label="Accompagnants">{{ guest.plus_ones|length }}</td>
+          <td data-label="Invitation envoyée">
             {% if guest.invitation_sent_at %}
               {{ guest.invitation_channel_labels|join(" + ") if guest.invitation_channel_labels else "Oui" }}
             {% else %}
@@ -57,14 +57,14 @@
                 {% if guest.email or guest.phone %}
                 <form method="post" action="{{ url_for('admin.send_invitation', guest_id=guest.id) }}">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button type="submit" class="split-dropdown__item">Envoyer</button>
+                  <button type="submit" class="split-dropdown__item" {{ "disabled" if date_chosen }} title="{{ 'Une date a été retenue — les invitations ne sont plus envoyées.' if date_chosen }}">Envoyer</button>
                 </form>
                 {% else %}
                 <span class="split-dropdown__item" title="{{ url_for('guest.landing', token=guest.token, _external=True) }}">Pas de contact — lien : {{ guest.token }}</span>
                 {% endif %}
                 <form method="post" action="{{ url_for('admin.regenerate_link', guest_id=guest.id) }}">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button type="submit" class="split-dropdown__item">Régénérer le lien</button>
+                  <button type="submit" class="split-dropdown__item" {{ "disabled" if date_chosen }} title="{{ 'Une date a été retenue — le lien ne doit plus être régénéré.' if date_chosen }}">Régénérer le lien</button>
                 </form>
                 {% if guest.rsvp_status != "pending" %}
                 <form method="post" action="{{ url_for('admin.reset_answer', guest_id=guest.id) }}" onsubmit="return confirm('Réinitialiser la réponse de {{ guest.full_name }} ? Les dates, accompagnants et allergies seront effacés.');">

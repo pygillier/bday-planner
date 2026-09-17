@@ -5,7 +5,9 @@ from app.models import Guest
 
 
 def test_import_creates_guests(app):
-    csv_bytes = "Prénom,Nom,E-mail,Téléphone\nJeanne,Dupont,jeanne@example.com,0102030405\n".encode()
+    csv_bytes = (
+        "Prénom,Nom,E-mail,Téléphone\nJeanne,Dupont,jeanne@example.com,0102030405\n".encode()
+    )
     result = import_guests_from_csv(csv_bytes)
 
     assert result.added == 1

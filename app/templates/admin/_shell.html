@@ -1,4 +1,10 @@
 {% macro sidebar(active) %}
+<input type="checkbox" id="admin-nav-toggle" class="admin-nav-toggle" hidden>
+<div class="admin-topbar">
+  <label for="admin-nav-toggle" class="admin-topbar__burger" aria-label="Ouvrir le menu">&#9776;</label>
+  <div class="admin-topbar__title">{{ site_title }}</div>
+</div>
+<label for="admin-nav-toggle" class="admin-nav-overlay" aria-hidden="true"></label>
 <aside class="admin-sidebar">
   <div class="admin-sidebar__brand">{{ site_title }}</div>
   <nav>
@@ -9,6 +15,7 @@
     <a href="{{ url_for('admin.recap_email_template') }}" class="{{ 'active' if active == 'recap_email_template' }}">Modèle e-mail récap</a>
     <a href="{{ url_for('admin.sms_template') }}" class="{{ 'active' if active == 'sms_template' }}">Modèle SMS</a>
     <a href="{{ url_for('admin.details_message') }}" class="{{ 'active' if active == 'details_message' }}">Message page invité·e</a>
+    <a href="{{ url_for('admin.follow_up') }}" class="{{ 'active' if active == 'follow_up' }}">Message de relance</a>
     <a href="{{ url_for('admin.journal') }}" class="{{ 'active' if active == 'journal' }}">Journal</a>
     <a href="{{ url_for('admin.export_csv') }}">Exporter (CSV)</a>
   </nav>
