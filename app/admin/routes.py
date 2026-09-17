@@ -11,6 +11,7 @@ from flask import (
     session,
     url_for,
 )
+from sqlalchemy import or_
 
 from app.admin import admin_bp
 from app.admin.csv_import import import_guests_from_csv
@@ -280,15 +281,27 @@ def _send_follow_up(guests, subject, body, channel_email, channel_sms):
 
 @admin_bp.route("/follow-up", methods=["GET", "POST"])
 def follow_up():
-    status_filter = request.values.get("status_filter") or "pending"
-    if status_filter not in {"pending", "confirmed", "declined"}:
-        status_filter = "pending"
+    status_filter = request.values.get("status_filter") or "confirmed"
+    if status_filter not in {"confirmed", "declined"}:
+        status_filter = "confirmed"
 
-    guests = (
-        Guest.query.filter_by(rsvp_status=status_filter)
-        .order_by(Guest.last_name, Guest.first_name)
-        .all()
-    )
+    chosen_option = EventOption.get_chosen()
+    if status_filter == "confirmed":
+        query = Guest.query.filter_by(rsvp_status="confirmed")
+        if chosen_option:
+            query = query.filter(Guest.event_options.contains(chosen_option))
+    elif chosen_option:
+        # "Unavailable" also covers guests who confirmed but not for the
+        # chosen date -- they can't attend the retained date either.
+        query = Guest.query.filter(
+            or_(
+                Guest.rsvp_status == "declined",
+                (Guest.rsvp_status == "confirmed") & ~Guest.event_options.contains(chosen_option),
+            )
+        )
+    else:
+        query = Guest.query.filter_by(rsvp_status="declined")
+    guests = query.order_by(Guest.last_name, Guest.first_name).all()
 
     form = FollowUpComposeForm()
     if request.method == "GET":

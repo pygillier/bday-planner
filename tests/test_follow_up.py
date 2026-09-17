@@ -31,6 +31,32 @@ def test_follow_up_lists_only_matching_status(admin_client):
     assert b"Jeanne Dupont" not in response.data
 
 
+def test_follow_up_unavailable_includes_confirmed_for_other_date(admin_client):
+    option = EventOption(label="Samedi", starts_at=datetime(2026, 9, 12, 15, 0), is_chosen=True)
+    other_option = EventOption(label="Dimanche", starts_at=datetime(2026, 9, 13, 15, 0))
+    db.session.add_all([option, other_option])
+
+    declined = Guest(
+        first_name="Paul", last_name="Martin", email="paul@example.com", rsvp_status="declined"
+    )
+    confirmed_for_chosen_date = Guest(
+        first_name="Jeanne", last_name="Dupont", email="jeanne@example.com", rsvp_status="confirmed"
+    )
+    confirmed_for_chosen_date.event_options.append(option)
+    confirmed_for_other_date = Guest(
+        first_name="Alice", last_name="Durand", email="alice@example.com", rsvp_status="confirmed"
+    )
+    confirmed_for_other_date.event_options.append(other_option)
+    db.session.add_all([declined, confirmed_for_chosen_date, confirmed_for_other_date])
+    db.session.commit()
+
+    response = admin_client.get("/admin/follow-up?status_filter=declined")
+    assert response.status_code == 200
+    assert b"Paul Martin" in response.data
+    assert b"Alice Durand" in response.data
+    assert b"Jeanne Dupont" not in response.data
+
+
 def test_follow_up_send_respects_checkbox_exclusion(admin_client, monkeypatch):
     calls = []
     monkeypatch.setattr(
@@ -72,7 +98,7 @@ def test_follow_up_send_both_channels_creates_two_logs(admin_client, monkeypatch
         last_name="Durand",
         email="alice@example.com",
         phone="0612345678",
-        rsvp_status="pending",
+        rsvp_status="confirmed",
     )
     db.session.add(guest)
     db.session.commit()
@@ -81,7 +107,7 @@ def test_follow_up_send_both_channels_creates_two_logs(admin_client, monkeypatch
         "/admin/follow-up",
         data={
             "action": "send",
-            "status_filter": "pending",
+            "status_filter": "confirmed",
             "channel_email": "y",
             "channel_sms": "y",
             "subject": "Un petit mot",
@@ -109,7 +135,7 @@ def test_follow_up_creates_failed_log_on_provider_error(admin_client, monkeypatc
     monkeypatch.setattr("app.admin.routes.send_follow_up_email", fake_send)
 
     guest = Guest(
-        first_name="Jeanne", last_name="Dupont", email="jeanne@example.com", rsvp_status="pending"
+        first_name="Jeanne", last_name="Dupont", email="jeanne@example.com", rsvp_status="confirmed"
     )
     db.session.add(guest)
     db.session.commit()
@@ -118,7 +144,7 @@ def test_follow_up_creates_failed_log_on_provider_error(admin_client, monkeypatc
         "/admin/follow-up",
         data={
             "action": "send",
-            "status_filter": "pending",
+            "status_filter": "confirmed",
             "channel_email": "y",
             "subject": "Un petit mot",
             "body": "Bonjour {prenom}",
@@ -137,7 +163,7 @@ def test_follow_up_test_send_does_not_create_log_or_touch_guests(admin_client, m
     )
 
     guest = Guest(
-        first_name="Jeanne", last_name="Dupont", email="jeanne@example.com", rsvp_status="pending"
+        first_name="Jeanne", last_name="Dupont", email="jeanne@example.com", rsvp_status="confirmed"
     )
     db.session.add(guest)
     db.session.commit()
@@ -146,7 +172,7 @@ def test_follow_up_test_send_does_not_create_log_or_touch_guests(admin_client, m
         "/admin/follow-up",
         data={
             "action": "test",
-            "status_filter": "pending",
+            "status_filter": "confirmed",
             "channel_email": "y",
             "subject": "Un petit mot",
             "body": "Bonjour {prenom}",
@@ -162,7 +188,7 @@ def test_follow_up_appears_in_journal(admin_client, monkeypatch):
     monkeypatch.setattr("app.emails.resend.Emails.send", lambda payload: {"id": "test-message-id"})
 
     guest = Guest(
-        first_name="Jeanne", last_name="Dupont", email="jeanne@example.com", rsvp_status="pending"
+        first_name="Jeanne", last_name="Dupont", email="jeanne@example.com", rsvp_status="confirmed"
     )
     db.session.add(guest)
     db.session.commit()
@@ -171,7 +197,7 @@ def test_follow_up_appears_in_journal(admin_client, monkeypatch):
         "/admin/follow-up",
         data={
             "action": "send",
-            "status_filter": "pending",
+            "status_filter": "confirmed",
             "channel_email": "y",
             "subject": "Nouvelles concernant la date",
             "body": "Bonjour {prenom}",
@@ -190,8 +216,9 @@ def test_follow_up_date_placeholder_uses_chosen_option(admin_client, monkeypatch
     option = EventOption(label="Samedi", starts_at=datetime(2026, 9, 12, 15, 0), is_chosen=True)
     db.session.add(option)
     guest = Guest(
-        first_name="Jeanne", last_name="Dupont", email="jeanne@example.com", rsvp_status="pending"
+        first_name="Jeanne", last_name="Dupont", email="jeanne@example.com", rsvp_status="confirmed"
     )
+    guest.event_options.append(option)
     db.session.add(guest)
     db.session.commit()
 
@@ -199,7 +226,7 @@ def test_follow_up_date_placeholder_uses_chosen_option(admin_client, monkeypatch
         "/admin/follow-up",
         data={
             "action": "send",
-            "status_filter": "pending",
+            "status_filter": "confirmed",
             "channel_email": "y",
             "subject": "Nouvelles concernant la date",
             "body": "Rendez-vous le {date}",
@@ -215,7 +242,7 @@ def test_follow_up_date_placeholder_falls_back_when_no_option_chosen(admin_clien
     monkeypatch.setattr("app.emails.resend.Emails.send", lambda payload: {"id": "test-message-id"})
 
     guest = Guest(
-        first_name="Jeanne", last_name="Dupont", email="jeanne@example.com", rsvp_status="pending"
+        first_name="Jeanne", last_name="Dupont", email="jeanne@example.com", rsvp_status="confirmed"
     )
     db.session.add(guest)
     db.session.commit()
@@ -224,7 +251,7 @@ def test_follow_up_date_placeholder_falls_back_when_no_option_chosen(admin_clien
         "/admin/follow-up",
         data={
             "action": "send",
-            "status_filter": "pending",
+            "status_filter": "confirmed",
             "channel_email": "y",
             "subject": "Nouvelles concernant la date",
             "body": "Rendez-vous le {date}",

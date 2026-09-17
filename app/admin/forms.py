@@ -69,7 +69,7 @@ class DetailsPageMessageForm(FlaskForm):
 class FollowUpComposeForm(FlaskForm):
     status_filter = SelectField(
         "Statut RSVP",
-        choices=[("pending", "En attente"), ("confirmed", "Confirmé·e"), ("declined", "Décliné·e")],
+        choices=[("confirmed", "Disponible"), ("declined", "Indisponible")],
         validators=[DataRequired()],
     )
     channel_email = BooleanField("E-mail", default=True)
