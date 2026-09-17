@@ -1,6 +1,6 @@
 services:
   web:
-    image: ghcr.io/pygillier/bday-planner:0.6
+    image: ghcr.io/pygillier/bday-planner:0.6.1
     restart: unless-stopped
     env_file: .env
     depends_on:
