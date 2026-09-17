@@ -16,9 +16,8 @@
       <div class="field" style="max-width:20rem;">
         <label for="status_filter_link">Filtrer par statut</label>
         <select id="status_filter_link" name="status_filter" onchange="this.form.submit()">
-          <option value="pending" {{ "selected" if status_filter == "pending" }}>En attente</option>
-          <option value="confirmed" {{ "selected" if status_filter == "confirmed" }}>Confirmé·e</option>
-          <option value="declined" {{ "selected" if status_filter == "declined" }}>Décliné·e</option>
+          <option value="confirmed" {{ "selected" if status_filter == "confirmed" }}>Disponible</option>
+          <option value="declined" {{ "selected" if status_filter == "declined" }}>Indisponible</option>
         </select>
       </div>
     </form>
