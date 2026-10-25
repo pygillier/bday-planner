@@ -101,7 +101,7 @@ tasks:
         newversion="${major}.${minor}.${patch}"
         newtag="v${newversion}"
         echo "Bumping to ${newtag} (previous: ${latest:-none})"
-        sed -i.bak -E "s|(image: ghcr\.io/pygillier/bday-planner:)[0-9]+\.[0-9]+\.[0-9]+|\1${newversion}|; s|(image: ghcr\.io/pygillier/bday-planner:)[0-9]+\.[0-9]+|\1${newversion}|" docker-compose.prod.yml
+        sed -i.bak -E "s|(image: ghcr\.io/pygillier/bday-planner:)[0-9]+(\.[0-9]+)*|\1${newversion}|" docker-compose.prod.yml
         rm -f docker-compose.prod.yml.bak
         git add docker-compose.prod.yml
         git commit -m "Bump to ${newtag}"
