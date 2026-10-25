@@ -160,21 +160,26 @@ def guests_list():
 
 @admin_bp.route("/guests/print")
 def print_guest_list():
-    """Printable day-of attendance sheet: confirmed guests only, with
-    plus-one counts, dietary notes and a tick box. Meant to be saved as
-    PDF / printed from the browser."""
-    guests = (
-        Guest.query.filter_by(rsvp_status="confirmed")
+    """Printable day-of attendance sheet: guests who confirmed and are
+    available on the chosen date, with plus-one counts, dietary notes and a
+    tick box. Meant to be saved as PDF / printed from the browser."""
+    chosen = EventOption.get_chosen()
+    if chosen is None:
+        flash("Choisissez d'abord la date retenue pour générer la liste du jour J.", "error")
+        return redirect(url_for("admin.guests_list"))
+    guests = [
+        g
+        for g in Guest.query.filter_by(rsvp_status="confirmed")
         .order_by(Guest.last_name, Guest.first_name)
         .all()
-    )
-    chosen = EventOption.get_chosen()
+        if chosen in g.event_options
+    ]
     return render_template(
         "admin/guests_print.html",
         guests=guests,
         total_headcount=sum(g.headcount for g in guests),
         total_plus_ones=sum(len(g.plus_ones) for g in guests),
-        chosen_date=chosen.display_text if chosen else None,
+        chosen_date=chosen.display_text,
         printed_on=utcnow(),
     )
 
