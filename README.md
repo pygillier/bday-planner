@@ -1,64 +1,133 @@
-# 80 ans 🎉
+<div align="center">
 
-A small web app for managing RSVPs to an 80th birthday party.
+# Birthday planner
 
-The organizer pre-registers the guest list. Each guest gets a personal link — no login, no password — where they confirm attendance, note allergies/dietary needs, and add accompanying guests. The organizer manages everything from an admin backend: guest list, invitation emails, response dashboard, and a caterer-ready CSV export.
+**Simple RSVPs for any birthday party, easy enough for every guest, including grandparents.**
 
-Built for a non-technical, largely elderly guest list: the guest-facing flow is a single page per step, large buttons, free-text everywhere, and the same link can always be reopened to review or change an answer.
+[![Publish](https://github.com/pygillier/bday-planner/actions/workflows/publish.yml/badge.svg)](https://github.com/pygillier/bday-planner/actions/workflows/publish.yml)
+![Python 3.14](https://img.shields.io/badge/python-3.14-blue?logo=python&logoColor=white)
+![Flask](https://img.shields.io/badge/flask-black?logo=flask)
+![PostgreSQL](https://img.shields.io/badge/postgresql-336791?logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/docker-compose-2496ED?logo=docker&logoColor=white)
+
+</div>
+
+Originally built for an 80th birthday, it works for any birthday or small celebration.
+
+The organizer pre-registers the guest list. Each guest receives a personal link (no login, no password) where they confirm attendance, note allergies or dietary needs, and add accompanying guests. The organizer runs everything from an admin backend: guest list, invitations, response dashboard, and a caterer-ready CSV export.
+
+Guests may be elderly or non-technical, so the guest flow is built around that: one simple page per step, large buttons, free-text fields, and a link that can be reopened at any time to review or change an answer.
+
+## Table of contents
+
+- [How it works](#how-it-works)
+- [Features](#features)
+- [Tech stack](#tech-stack)
+- [Getting started](#getting-started)
+- [Configuration](#configuration)
+- [Development](#development)
+- [Deploying](#deploying)
+- [Project layout](#project-layout)
+
+## How it works
+
+1. **The organizer** logs into `/admin` and adds guests one by one or imports a CSV.
+2. **Invitations** go out by e-mail or SMS, only when the organizer clicks send. Nothing is sent automatically.
+3. **Each guest** opens their personal link, answers in a few taps, and can come back to change their mind.
+4. **The organizer** follows responses on the dashboard and exports a CSV for the caterer.
 
 ## Features
 
-- **Guest RSVP**: confirm/decline, free-text dietary notes, add accompanying guests (no name needed, just their own dietary notes)
-- **Admin backend**: add/edit/remove guests (one by one or bulk CSV import), editable invitation templates (e-mail via [Resend](https://resend.com), SMS via [Twilio](https://www.twilio.com), both with a live preview and test-send), send invitations (single or bulk, over whichever channel each guest has contact info for), dashboard with headcount stats, CSV export
-- **Admin login** via OIDC against a self-hosted [Pocket ID](https://github.com/pocket-id/pocket-id) instance (Authlib, authorization-code flow + PKCE) — no local passwords
-- French-only UI
+### For guests
 
-## Stack
+- Confirm or decline in one tap
+- Free-text dietary notes: no menus, no checkboxes
+- Add accompanying guests, with no name needed, only their own dietary notes
+- Zero login: an unguessable personal link is the only credential
+- Mobile-first design, French-only
 
-Flask · PostgreSQL · SQLAlchemy · Docker Compose · Python 3.14
+### For the organizer
+
+- Guest CRUD, plus bulk CSV import with de-duplication
+- Editable invitation templates (`{prenom}`, `{nom}`, `{lien}` placeholders) for e-mail ([Resend](https://resend.com)) and SMS ([Twilio](https://www.twilio.com)), with live preview and test send
+- Single or bulk invitation sending, over whichever channel each guest has contact info for
+- Dashboard with headcount stats
+- Caterer-ready CSV export
+- Link regeneration if a guest's link leaks
+- Admin login through OIDC against a self-hosted [Pocket ID](https://github.com/pocket-id/pocket-id) instance (authorization-code flow + PKCE), with no local passwords
+
+## Tech stack
+
+| Layer | Choice |
+| --- | --- |
+| Web | Flask, Flask-WTF, Flask-SQLAlchemy, Flask-Migrate |
+| Database | PostgreSQL (psycopg 3) |
+| Auth | Authlib, OIDC with Pocket ID |
+| Messaging | Resend (e-mail), Twilio (SMS) |
+| Tooling | uv, ruff, pytest, go-task |
+| Runtime | Python 3.14, Docker Compose |
 
 ## Getting started
 
-Requires [Docker](https://docs.docker.com/get-docker/) and [Task](https://taskfile.dev) (`go-task`).
+### Prerequisites
 
-1. Copy the environment template and fill in real values:
+- [Docker](https://docs.docker.com/get-docker/) with Compose
+- [Task](https://taskfile.dev) (`go-task`)
 
-   ```bash
-   cp .env.example .env
-   ```
+### Run it locally
 
-   You'll need:
-   - `FLASK_SECRET_KEY` — any long random string (`python -c "import secrets; print(secrets.token_hex(32))"`)
-   - `POSTGRES_*` / `DATABASE_URL` — can keep the defaults for local use
-   - `RESEND_API_KEY` / `RESEND_FROM_EMAIL` — from your [Resend](https://resend.com) account, using a domain you've verified there
-   - `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` / `TWILIO_FROM_NUMBER` — from your [Twilio](https://www.twilio.com) account, for SMS invitations to guests with a phone number but no e-mail
-   - `OIDC_ISSUER` / `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET` — from your Pocket ID instance; register `https://<your-domain>/admin/auth/callback` as the client's allowed redirect URI
+```bash
+cp .env.example .env   # then fill in real values, see Configuration
+task up
+```
 
-2. Start everything:
+`task up` builds the image, starts Postgres, and runs pending migrations on boot. The app is then at <http://localhost:8000>. Log into `/admin` with Pocket ID and start adding guests.
 
-   ```bash
-   task up
-   ```
+## Configuration
 
-   This builds the image, starts Postgres, and runs pending migrations automatically. The app is then available at `http://localhost:8000`.
+Everything is configured through `.env`, which is git-ignored and must never be committed. `.env.example` is the template.
 
-3. Log into `/admin` with Pocket ID and start adding guests.
+| Variable | Purpose |
+| --- | --- |
+| `FLASK_SECRET_KEY` | Any long random string: `python -c "import secrets; print(secrets.token_hex(32))"` |
+| `POSTGRES_*`, `DATABASE_URL` | Database connection. The defaults are fine locally. |
+| `RESEND_API_KEY`, `RESEND_FROM_EMAIL` | From your [Resend](https://resend.com) account, using a domain you've verified there |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` | From your [Twilio](https://www.twilio.com) account, for SMS invitations to guests who have a phone number but no e-mail |
+| `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` | From your Pocket ID instance. Register `https://<your-domain>/admin/auth/callback` as an allowed redirect URI. |
 
-See `Taskfile.yml` (`task --list`) for the rest of the day-to-day commands: `migrate`, `makemigration`, `shell`, `dbshell`, `test`, `lint`, `fmt`.
+> [!NOTE]
+> Any successful Pocket ID login is granted admin access: there is deliberately no allow-list. Only point the app at an OIDC instance whose users you trust.
+
+## Development
+
+Every command goes through `task`; run `task --list` for the full list.
+
+| Command | Description |
+| --- | --- |
+| `task up` / `task down` | Start / stop the stack |
+| `task logs` | Tail the web logs |
+| `task migrate` | Apply pending migrations |
+| `task makemigration -- "message"` | Generate a migration after editing `app/models.py` |
+| `task shell` / `task dbshell` | Flask shell / `psql` |
+| `task test` | Run the test suite |
+| `task lint` / `task fmt` | Lint / format with ruff |
+| `task precommit-install` | Install the pre-commit hook (once per clone) |
+
+Tests run against in-memory SQLite, so `uv sync --group dev && pytest` also works without Docker for a quick check.
 
 ## Deploying
 
-The app is published as a container image to GHCR on every version tag (see below), and production runs off that image rather than building from source.
+Production runs from the container image published to GHCR on every version tag, not from source.
 
-1. On the Docker host, copy `docker-compose.prod.yml` and a filled-in `.env` (same variables as local `.env`, but pointing at real Resend/Pocket ID/Postgres credentials, with `SESSION_COOKIE_SECURE` implications in mind — see step 3 below).
+1. On the Docker host, copy `docker-compose.prod.yml` and a filled-in `.env` with real Resend, Twilio, Pocket ID and Postgres credentials.
 2. Pull and start the stack:
 
    ```bash
    task deploy
    ```
 
-   This pulls `ghcr.io/pygillier/bday-planner:latest` and (re)starts `web` + `db` via `docker-compose.prod.yml`, running pending migrations automatically on boot. Re-run `task deploy` after each release to update.
-3. Put it behind a reverse proxy with TLS (Caddy, Traefik, nginx…) — that's not included here. `SESSION_COOKIE_SECURE` is enabled outside of local dev, so admin login requires HTTPS in production.
+   This pulls `ghcr.io/pygillier/bday-planner:latest` and (re)starts `web` and `db`, running migrations on boot. Re-run it after each release.
+3. Put it behind a reverse proxy with TLS (Caddy, Traefik, nginx…). That isn't included here. `SESSION_COOKIE_SECURE` is on outside local dev, so admin login requires HTTPS.
 
 ### Releasing a new version
 
@@ -66,8 +135,16 @@ The app is published as a container image to GHCR on every version tag (see belo
 task tag -- patch   # or: minor / major
 ```
 
-This bumps the last `vX.Y.Z` git tag per [semver](https://semver.org) and pushes it, which triggers a GitHub Actions workflow ([.github/workflows/publish.yml](.github/workflows/publish.yml)) that builds the image, pushes it to GHCR tagged with the version (plus rolling `major.minor`, `major`, and `latest` tags), and creates a GitHub release with the image reference and auto-generated changelog.
+This bumps the latest `vX.Y.Z` git tag per [semver](https://semver.org) and pushes it. The [publish workflow](.github/workflows/publish.yml) then builds the image, pushes it to GHCR (tagged with the version plus rolling `major.minor`, `major` and `latest`), and creates a GitHub release with the image reference and an auto-generated changelog.
 
 ## Project layout
 
-See [AGENTS.md](AGENTS.md) for the full breakdown of the codebase structure, key design decisions, and conventions — useful for both humans and AI coding agents picking this up later.
+```
+app/
+  admin/    OIDC-protected backend: guests, CSV import/export, templates, dashboard
+  guest/    unauthenticated, token-based RSVP flow
+migrations/ Alembic migrations
+tests/      pytest suite
+```
+
+See [AGENTS.md](AGENTS.md) for the full breakdown, key design decisions, and conventions. It's useful for humans and AI coding agents alike.
