@@ -54,6 +54,7 @@ from app.models import (
     InvitationLog,
     RecapEmailTemplate,
     SmsTemplate,
+    utcnow,
 )
 from app.sms import (
     render_sms_body,
@@ -154,6 +155,27 @@ def guests_list():
         guests=guests,
         status_filter=status_filter,
         date_chosen=date_chosen,
+    )
+
+
+@admin_bp.route("/guests/print")
+def print_guest_list():
+    """Printable day-of attendance sheet: confirmed guests only, with
+    plus-one counts, dietary notes and a tick box. Meant to be saved as
+    PDF / printed from the browser."""
+    guests = (
+        Guest.query.filter_by(rsvp_status="confirmed")
+        .order_by(Guest.last_name, Guest.first_name)
+        .all()
+    )
+    chosen = EventOption.get_chosen()
+    return render_template(
+        "admin/guests_print.html",
+        guests=guests,
+        total_headcount=sum(g.headcount for g in guests),
+        total_plus_ones=sum(len(g.plus_ones) for g in guests),
+        chosen_date=chosen.display_text if chosen else None,
+        printed_on=utcnow(),
     )
 
 

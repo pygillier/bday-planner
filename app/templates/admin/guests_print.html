@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Liste des invités — {{ site_title }}</title>
+  <style>
+    @page { size: A4 portrait; margin: 12mm; }
+    * { box-sizing: border-box; }
+    body { font-family: Arial, Helvetica, sans-serif; font-size: 11pt; color: #000; margin: 0; padding: 1rem; }
+    header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 10px; }
+    h1 { font-size: 18pt; margin: 0; }
+    .meta { font-size: 10pt; text-align: right; }
+    .totals { font-size: 12pt; font-weight: bold; margin: 0 0 10px; }
+    .toolbar { margin-bottom: 12px; }
+    .toolbar button { font-size: 12pt; padding: 6px 14px; cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #555; padding: 5px 7px; vertical-align: top; text-align: left; }
+    th { background: #e8e8e8; font-size: 10pt; }
+    thead { display: table-header-group; }
+    tr { break-inside: avoid; }
+    td.tick { width: 12mm; text-align: center; }
+    .box { display: inline-block; width: 6mm; height: 6mm; border: 1.5px solid #000; }
+    td.num { width: 22mm; text-align: center; }
+    .name { font-weight: bold; }
+    .notes { font-size: 10pt; }
+    .notes .who { font-weight: bold; }
+    .none { color: #777; }
+    @media print { .toolbar { display: none; } body { padding: 0; } }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <button type="button" onclick="window.print()">Imprimer / Enregistrer en PDF</button>
+  </div>
+  <header>
+    <h1>{{ site_title }} — Liste des invités</h1>
+    <div class="meta">
+      {% if chosen_date %}{{ chosen_date }}<br>{% endif %}
+      Édité le {{ printed_on.strftime("%d/%m/%Y") }}
+    </div>
+  </header>
+  <p class="totals">
+    {{ guests|length }} invité·e·s confirmé·e·s + {{ total_plus_ones }} accompagnant·e·s = {{ total_headcount }} personnes
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th>Présent</th>
+        <th>Nom</th>
+        <th>Accomp.</th>
+        <th>Total</th>
+        <th>Allergies / régimes</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for guest in guests %}
+      <tr>
+        <td class="tick"><span class="box"></span></td>
+        <td class="name">{{ guest.last_name|upper }} {{ guest.first_name }}</td>
+        <td class="num">{{ guest.plus_ones|length }}</td>
+        <td class="num">{{ guest.headcount }}</td>
+        <td class="notes">
+          {% set ns = namespace(any=false) %}
+          {% if guest.dietary_notes and guest.dietary_notes.strip() %}
+            {% set ns.any = true %}
+            <div><span class="who">{{ guest.first_name }} :</span> {{ guest.dietary_notes }}</div>
+          {% endif %}
+          {% for plus_one in guest.plus_ones %}
+            {% if plus_one.dietary_notes and plus_one.dietary_notes.strip() %}
+              {% set ns.any = true %}
+              <div><span class="who">Accompagnant {{ loop.index }} :</span> {{ plus_one.dietary_notes }}</div>
+            {% endif %}
+          {% endfor %}
+          {% if not ns.any %}<span class="none">—</span>{% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5">Aucun·e invité·e confirmé·e pour le moment.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>
